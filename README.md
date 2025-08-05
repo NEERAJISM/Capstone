@@ -22,3 +22,10 @@
 4. Place the **unzipped** folders in the `2021/` or `2022/` directories.  
    ⚠️ Note: Unzipping `.rar` files can be tricky on Windows.  
    ✅ TODO: May use Docker to simplify the setup process.
+
+Team Members:
+---------------
+
+Neeraj Patidar – 8patidarneeraj@gmail.com
+Vishesh Mangla - manglavishesh64@gmail.com  
+Manish Kumar Chaudhary - mkumarchaudhary06@gmail.com 

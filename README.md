@@ -11,7 +11,7 @@
 
 2. Activate the virtual environment:
     ```bash
-    source ./venv/Scripts/activate  # On Windows
+    source ./venv/Scripts/activate  # On Windows using git bash
     ```
 
 3. Install dependencies:

@@ -12,3 +12,4 @@ plotly
 statsmodels
 scikit-learn
 filterpy
+jupyter

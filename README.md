@@ -11,7 +11,7 @@
 
 2. Activate the virtual environment:
     ```bash
-    source ./venv/Scripts/activate  # On Windows
+    source ./venv/Scripts/activate  
     ```
 
 3. Install dependencies:
@@ -19,9 +19,8 @@
     pip install -r requirements.txt
     ```
 
-4. Place the **unzipped** folders in the `2021/` or `2022/` directories.  
-   ⚠️ Note: Unzipping `.rar` files can be tricky on Windows.  
-   ✅ TODO: May use Docker to simplify the setup process.
+4. Place the **unzipped** folders in the `downloaded_files/` directories.  
+<Rar name> / [<CSVs>]
 
 Team Members:
 ---------------

@@ -24,6 +24,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/data/2021/Cash Data November 2021/MUTHOOTCAP.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/data/2022/Cash Data December 2022/DHAMPURSUG.csv">
           <value>
             <Attribute>

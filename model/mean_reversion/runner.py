@@ -1,6 +1,6 @@
 import pandas as pd
 
-from mean_reversion.kalman_filter import run_kalman_filter
+from model.mean_reversion.kalman_filter import run_kalman_filter
 
 PAIRS_FILE = "pairs.csv"
 

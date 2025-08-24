@@ -4,8 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pykalman import KalmanFilter
 
-DATA_FOLDER = "../2021/Cash Data April 2021/"
-OUTPUT_FOLDER = "output_plots"
+DATA_FOLDER = "../data/2021/Cash Data April 2021/"
+OUTPUT_FOLDER = "output"
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 def load_stock(filepath):

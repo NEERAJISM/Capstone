@@ -18,3 +18,4 @@ plotly
 pillow
 scipy
 polars
+joblib

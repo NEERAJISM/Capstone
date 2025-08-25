@@ -1,0 +1,90 @@
+{
+    "cluster_0": {
+        "tickers": [
+            "GTLINFRA",
+            "SITINET",
+            "GAMMNINFRA",
+            "FCSSOFT",
+            "RCOM",
+            "LSIL",
+            "RTNPOWER"
+        ],
+        "pairs": [
+            [
+                "GTLINFRA",
+                "FCSSOFT"
+            ],
+            [
+                "GTLINFRA",
+                "RTNPOWER"
+            ],
+            [
+                "SITINET",
+                "FCSSOFT"
+            ],
+            [
+                "GAMMNINFRA",
+                "RCOM"
+            ],
+            [
+                "FCSSOFT",
+                "RTNPOWER"
+            ]
+        ]
+    },
+    "cluster_1": {
+        "tickers": [
+            "BALLARPUR",
+            "KSERASERA",
+            "VIJIFIN"
+        ],
+        "pairs": [
+            [
+                "KSERASERA",
+                "VIJIFIN"
+            ]
+        ]
+    },
+    "cluster_2": {
+        "tickers": [
+            "MERCATOR",
+            "GAYAHWS",
+            "KGL",
+            "RAJRAYON"
+        ],
+        "pairs": [
+            [
+                "MERCATOR",
+                "KGL"
+            ],
+            [
+                "GAYAHWS",
+                "KGL"
+            ],
+            [
+                "GAYAHWS",
+                "RAJRAYON"
+            ],
+            [
+                "KGL",
+                "RAJRAYON"
+            ]
+        ]
+    },
+    "cluster_3": {
+        "tickers": [
+            "SANWARIA",
+            "UNITECH",
+            "SPYL"
+        ],
+        "pairs": []
+    },
+    "cluster_4": {
+        "tickers": [
+            "UJAAS",
+            "GREENPOWER",
+            "RHFL"
+        ],
+        "pairs": []
+    }
+}

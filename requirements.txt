@@ -14,3 +14,7 @@ scikit-learn
 filterpy
 jupyter
 pykalman
+plotly
+pillow
+scipy
+polars

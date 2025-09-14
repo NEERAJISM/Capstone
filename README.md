@@ -97,7 +97,7 @@ python main.py
 ---
 
 ### Folder Preview
-<div style="display: flex; justify-content: space-evenly; gap: 6rem; align-items: center;">
+<div style="display: flex; gap: 20rem; align-items: center;">
   <!-- First image -->
   <img src="https://github.com/user-attachments/assets/0debc9da-c619-4787-a65f-73375234afef" width="400">
   

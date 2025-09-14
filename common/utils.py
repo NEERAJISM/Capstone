@@ -2,6 +2,8 @@ import zipfile
 import rarfile
 from pathlib import Path
 import pandas as pd
+import logging
+import sys
 
 
 class Utils:
@@ -63,3 +65,4 @@ class Utils:
         df.set_index('datetime', inplace=True)
         df.sort_index(inplace=True)
         return df
+

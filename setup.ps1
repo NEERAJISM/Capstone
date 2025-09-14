@@ -8,28 +8,31 @@ if ($currentFolder -ne "capstone") {
 }
 
 # -------------------------------
-# Ensure data folder exists
+# Validate data folder structure
 # -------------------------------
 $dataPath = "$PWD\data"
+
 if (-Not (Test-Path $dataPath)) {
-    Write-Host "Data folder not found. Downloading and extracting data.zip..."
+    Write-Error "Data folder not found. Please ensure 'data' is available in this directory."
+    exit 1
+}
 
-    $dropboxUrl = "https://www.dropbox.com/scl/fi/yfymt0eh0sp3xw92htdxv/data.zip?rlkey=xfqdzj6aack0eheq66bjpvm5q&st=02njn8rg&dl=1"
-    $zipPath = "$PWD\data.zip"
-
-    Invoke-WebRequest -Uri $dropboxUrl -OutFile $zipPath
-    Expand-Archive -LiteralPath $zipPath -DestinationPath $PWD -Force
-    Remove-Item $zipPath
-
-    if (-Not (Test-Path $dataPath)) {
-        Write-Error "Data folder was not created after extraction. Exiting."
+$years = @("2021", "2022")
+foreach ($year in $years) {
+    $yearPath = Join-Path $dataPath $year
+    if (-Not (Test-Path $yearPath)) {
+        Write-Error "$year folder not found in data. Please ensure it exists."
         exit 1
     }
 
-    Write-Host "Data setup complete."
-} else {
-    Write-Host "Data folder exists. Skipping download."
+    $subfolders = Get-ChildItem -Path $yearPath -Directory -ErrorAction SilentlyContinue
+    if (-Not $subfolders) {
+        Write-Error "$year folder exists but contains no subfolders. Please check your data."
+        exit 1
+    }
 }
+
+Write-Host "Data folder structure validated successfully."
 
 # -------------------------------
 # Ensure virtual environment exists

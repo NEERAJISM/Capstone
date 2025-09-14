@@ -10,31 +10,29 @@ if [ "$currentFolder" != "capstone" ]; then
 fi
 
 # -------------------------------
-# Ensure data folder exists
+# Validate data folder structure
 # -------------------------------
 dataPath="$PWD/data"
 if [ ! -d "$dataPath" ]; then
-    echo "Data folder not found. Downloading and extracting data.zip..."
+    echo "Data folder not found. Please ensure 'data' is available in this directory."
+    exit 1
+fi
 
-    dropboxUrl="https://www.dropbox.com/scl/fi/yfymt0eh0sp3xw92htdxv/data.zip?rlkey=xfqdzj6aack0eheq66bjpvm5q&st=02njn8rg&dl=1"
-    zipPath="$PWD/data.zip"
-
-    # Download
-    curl -L -o "$zipPath" "$dropboxUrl"
-
-    # Extract
-    unzip -o "$zipPath" -d "$PWD"
-    rm "$zipPath"
-
-    if [ ! -d "$dataPath" ]; then
-        echo "Data folder was not created after extraction. Exiting."
+for year in 2021 2022; do
+    yearPath="$dataPath/$year"
+    if [ ! -d "$yearPath" ]; then
+        echo "$year folder not found in data. Please ensure it exists."
         exit 1
     fi
 
-    echo "Data setup complete."
-else
-    echo "Data folder exists. Skipping download."
-fi
+    subfolders=$(find "$yearPath" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+    if [ -z "$subfolders" ]; then
+        echo "$year folder exists but contains no subfolders. Please check your data."
+        exit 1
+    fi
+done
+
+echo "Data folder structure validated successfully."
 
 # -------------------------------
 # Ensure virtual environment exists

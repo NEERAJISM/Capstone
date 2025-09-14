@@ -1,34 +1,17 @@
-import os
-import sys
-import re
-import glob
-import json
-import pickle
-import random
-import calendar
-from pathlib import Path
-from itertools import chain, combinations, islice
-from collections import defaultdict
+from itertools import combinations
 from datetime import datetime, timedelta
-from typing import List, Optional, Callable, Dict, Union, Tuple
+from typing import List, Optional, Dict
 
 import numpy as np
-import pandas as pd
-import polars as pl
-import matplotlib.pyplot as plt
-import seaborn
-from sklearn.impute import KNNImputer
 from sklearn.cluster import KMeans
 from statsmodels.tsa.stattools import coint, adfuller
 from statsmodels.regression.linear_model import OLS
 from statsmodels.tools import add_constant
 from joblib import Parallel, delayed
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from ...common.data_loader import StockDataLoader
-from ...common.utils import get_logger
+from common import StockDataLoader
+from common import get_logger
 
-logger = get_logger(__name__)
 
 class PairTradingAnalyzer:
     """
@@ -91,22 +74,24 @@ class PairTradingAnalyzer:
         self.start_time = datetime.strptime(trading_start, "%H:%M:%S").time()
         self.end_time = datetime.strptime(trading_end, "%H:%M:%S").time()
         self.tickers = tickers
+        self.logger = get_logger()
+
         self.min_mean_reversion = min_mean_reversion
         self._log_initial_config()
 
 
     def _log_initial_config(self):
         """Logs the initial configuration of the analyzer."""
-        logger.info("=" * 50)
-        logger.info("        PAIR TRADING ANALYZER CONFIGURATION")
-        logger.info("=" * 50)
-        logger.info(f"Base Directory     : {self.base_dir}")
-        logger.info(f"Run Date           : {self.run_date.date()}")
-        logger.info(f"Start Day          : {self.start_day.date()}")
-        logger.info(f"End Day            : {self.end_day.date()}")
-        logger.info(f"Trading Window     : {self.start_time} → {self.end_time}")
-        logger.info(f"Tickers            : {self.tickers if self.tickers else 'Using default universe'}")
-        logger.info("=" * 50)
+        self.logger.info("=" * 50)
+        self.logger.info("        PAIR TRADING ANALYZER CONFIGURATION")
+        self.logger.info("=" * 50)
+        self.logger.info(f"Base Directory     : {self.base_dir}")
+        self.logger.info(f"Run Date           : {self.run_date.date()}")
+        self.logger.info(f"Start Day          : {self.start_day.date()}")
+        self.logger.info(f"End Day            : {self.end_day.date()}")
+        self.logger.info(f"Trading Window     : {self.start_time} → {self.end_time}")
+        self.logger.info(f"Tickers            : {self.tickers if self.tickers else 'Using default universe'}")
+        self.logger.info("=" * 50)
 
     def filter_basic(self, volatility_threshold: float = 0.005) -> List[str]:
         """
@@ -140,7 +125,7 @@ class PairTradingAnalyzer:
             if avg_volatility is not None and avg_volatility >= volatility_threshold:
                 filtered.append(ticker)
         self.filtered_tickers = filtered
-        logger.info(f"Tickers after basic filtering: {filtered}")
+        self.logger.info(f"Tickers after basic filtering: {filtered}")
         return filtered
 
     def compute_features(self) -> Dict[str, np.ndarray]:
@@ -186,7 +171,7 @@ class PairTradingAnalyzer:
             in each cluster.
         """
         if not hasattr(self, 'features') or not self.features:
-            logger.warning("No features computed. Skipping clustering.")
+            self.logger.warning("No features computed. Skipping clustering.")
             self.clusters = {}
             return {}
             
@@ -195,7 +180,7 @@ class PairTradingAnalyzer:
         
         # Handle case with fewer samples than clusters
         if len(tickers) < n_clusters:
-            logger.warning(f"Number of tickers ({len(tickers)}) is less than n_clusters ({n_clusters}). Setting n_clusters to {len(tickers)}.")
+            self.logger.warning(f"Number of tickers ({len(tickers)}) is less than n_clusters ({n_clusters}). Setting n_clusters to {len(tickers)}.")
             n_clusters = len(tickers)
 
         kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
@@ -274,7 +259,7 @@ class PairTradingAnalyzer:
 
         # Generate all unique ticker pairs
         ticker_pairs = list(combinations(cluster_tickers, 2))
-        logger.info(f"Checking {len(ticker_pairs)} pairs in cluster with {len(cluster_tickers)} tickers.")
+        self.logger.info(f"Checking {len(ticker_pairs)} pairs in cluster with {len(cluster_tickers)} tickers.")
 
         # Use joblib to parallelize the _check_pair function
         results = Parallel(n_jobs=n_jobs)(
@@ -284,7 +269,7 @@ class PairTradingAnalyzer:
         # Filter out None results
         pairs = [res for res in results if res is not None]
 
-        logger.info(f"Found {len(pairs)} cointegrated pairs.")
+        self.logger.info(f"Found {len(pairs)} cointegrated pairs.")
         return pairs
 
 

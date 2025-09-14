@@ -3,10 +3,8 @@ from typing import List, Optional, Dict
 
 import numpy as np
 import polars as pl
-
-from ...common.data_loader import StockDataLoader
-from ...common.utils import get_logger
-
+from common import get_logger
+from common import StockDataLoader
 
 class LiquidityPredictor:
     """
@@ -50,7 +48,7 @@ class LiquidityPredictor:
             trading_end: The end time of the trading day.
             tickers: A list of tickers to analyze. If None, all available tickers will be used.
         """
-        self.logger = get_logger(__name__)
+        self.logger = get_logger()
         self.base_dir = base_dir
 
         # Convert run_date to datetime

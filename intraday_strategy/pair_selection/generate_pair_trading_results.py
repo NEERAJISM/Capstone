@@ -1,12 +1,11 @@
 import json
-import logging
 from pathlib import Path
 from typing import List
+from .liquidity import LiquidityPredictor
+from .mean_reversion import PairTradingAnalyzer
+from common import get_logger
 
-from intraday_strategy.pair_selection.liquidity import LiquidityPredictor
-from intraday_strategy.pair_selection.mean_reversion import PairTradingAnalyzer
-
-logger = logging.getLogger(__name__)
+logger = get_logger()
 
 
 def generate_pair_json(

@@ -3,30 +3,15 @@ from typing import List, Optional, Dict
 
 import numpy as np
 import polars as pl
-from common import get_logger
-from common import StockDataLoader
+from capstone.common import get_logger
+from capstone.common import StockDataLoader
 
 class LiquidityPredictor:
     """
-    Analyzes the liquidity of a list of stocks.
+    Analyzes and filters stocks based on liquidity.
 
-    This class provides methods for filtering and ranking stocks based on their liquidity.
-    It uses a two-stage filtering process:
-
-    1.  **Basic Filtering**: A preliminary filtering of stocks based on their average trading
-        volume. This step removes stocks that are clearly illiquid.
-
-    2.  **Advanced Filtering**: A more sophisticated filtering and ranking of stocks based on a
-        composite liquidity score. This score is a weighted average of several liquidity
-        indicators, including:
-        -   Average trading volume
-        -   Trading frequency
-        -   Amihud illiquidity measure
-        -   Volume consistency
-
-    The class is designed to be used as a preliminary step in a quantitative trading
-    strategy, to ensure that the selected stocks are sufficiently liquid to be traded
-    without significant market impact.
+    Provides basic and advanced filtering methods to rank stocks by liquidity using
+    a composite score of volume, trading frequency, Amihud illiquidity, and volume consistency.
     """
     def __init__(
         self,
@@ -41,12 +26,12 @@ class LiquidityPredictor:
         Initializes the LiquidityPredictor.
 
         Args:
-            base_dir: The base directory where the stock data is located.
-            run_date: The date for which the analysis is to be run.
-            lookback: The number of days to look back for historical data.
-            trading_start: The start time of the trading day.
-            trading_end: The end time of the trading day.
-            tickers: A list of tickers to analyze. If None, all available tickers will be used.
+            base_dir: Base directory for stock data.
+            run_date: Date for the analysis.
+            lookback: Number of days for historical data.
+            trading_start: Trading day start time.
+            trading_end: Trading day end time.
+            tickers: List of tickers to analyze. If None, all are used.
         """
         self.logger = get_logger()
         self.base_dir = base_dir
@@ -84,15 +69,13 @@ class LiquidityPredictor:
 
     def filter_basic(self, volume_threshold: int = 1000) -> List[str]:
         """
-        Filters the tickers based on a minimum average trading volume.
-
-        This method removes stocks that are clearly illiquid.
+        Filters tickers by a minimum average trading volume.
 
         Args:
-            volume_threshold: The minimum average daily trading volume for a stock to be included.
+            volume_threshold: Minimum average daily trading volume.
 
         Returns:
-            A list of tickers that pass the volume filter.
+            A list of tickers passing the filter.
         """
         self.logger.info(f"Running basic filter with volume threshold: {volume_threshold}")
         loader = StockDataLoader(
@@ -119,21 +102,15 @@ class LiquidityPredictor:
         min_score: float = 30.0
     ) -> List[str]:
         """
-        Filters and ranks the tickers based on a composite liquidity score.
-
-        This method uses a weighted average of several liquidity indicators to compute a
-        composite liquidity score for each stock. The stocks are then ranked based on this
-        score, and only those that meet a minimum score are returned.
+        Filters and ranks tickers by a composite liquidity score.
 
         Args:
-            tickers: The list of tickers to be filtered and ranked.
-            custom_weights: A dictionary of custom weights for the liquidity indicators. If None,
-                default weights will be used.
-            min_score: The minimum liquidity score for a stock to be included.
+            tickers: List of tickers to filter and rank.
+            custom_weights: Custom weights for liquidity indicators.
+            min_score: Minimum liquidity score for a stock to be included.
 
         Returns:
-            A list of tickers that pass the advanced liquidity filter, ranked from most to
-            least liquid.
+            A list of tickers passing the filter, ranked by liquidity.
         """
         self.logger.info(f"Running advanced filter with min score: {min_score}")
         if custom_weights is None:
@@ -168,11 +145,11 @@ class LiquidityPredictor:
 
     def _compute_weighted_score(self, df: pl.DataFrame, weights: Dict[str, float]) -> Optional[float]:
         """
-        Computes the weighted liquidity score for a single stock.
+        Computes the weighted liquidity score for a stock.
 
         Args:
-            df: The historical data for the stock.
-            weights: A dictionary of weights for the liquidity indicators.
+            df: Historical data for the stock.
+            weights: Weights for the liquidity indicators.
 
         Returns:
             The weighted liquidity score.
@@ -195,7 +172,7 @@ class LiquidityPredictor:
 
     def _compute_average_volume_score(self, df: pl.DataFrame) -> Optional[float]:
         """Computes the average volume score (log-normalized)."""
-        if df.is_empty() or "volume" not in df.columns:
+        if df.is_empty() :
             return None
         mean = df["volume"].mean()
         if mean is None or mean <= 0:
@@ -204,7 +181,7 @@ class LiquidityPredictor:
 
     def _compute_trading_frequency_score(self, df: pl.DataFrame) -> Optional[float]:
         """Computes the trading frequency score (percentage of active trading periods)."""
-        if df.is_empty() or "volume" not in df.columns:
+        if df.is_empty() :
             return None
         total = df.height
         if total == 0:
@@ -219,7 +196,7 @@ class LiquidityPredictor:
         The Amihud illiquidity measure is defined as the average ratio of the absolute
         daily return to the daily trading volume.
         """
-        if df.is_empty() or "close" not in df.columns or "volume" not in df.columns:
+        if df.is_empty():
             return None
             
         df = df.with_columns((pl.col("close").pct_change().abs()).alias("return"))    

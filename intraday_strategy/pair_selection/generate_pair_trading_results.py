@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 from typing import List
 from .liquidity import LiquidityPredictor
-from .mean_reversion import PairTradingAnalyzer
-from common import get_logger
+from .mean_reversion import MeanReversionAnalyzer
+from capstone.common import get_logger
 
 logger = get_logger()
 
@@ -50,7 +50,7 @@ def generate_pair_json(
     logger.info("Ranked liquid tickers: %s", liquid_tickers)
 
     # Pair Analysis
-    analyzer = PairTradingAnalyzer(
+    analyzer = MeanReversionAnalyzer(
         base_dir=base_dir,
         run_date=run_date,
         lookback=lookback,

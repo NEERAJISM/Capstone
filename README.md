@@ -118,7 +118,7 @@ python backtest/backtest.py
 
 ### Folder Preview
 
-<img width="409" height="531" alt="image" src="https://github.com/user-attachments/assets/ed795e98-d5f1-42f9-a1bc-37d32e52e54f" />
+<img width="477" height="688" alt="image" src="https://github.com/user-attachments/assets/0debc9da-c619-4787-a65f-73375234afef" />
 
 ---
 

@@ -97,13 +97,14 @@ python main.py
 ---
 
 ### Folder Preview
-<div style="display: flex; justify-content: spaace-around; gap: 6rem; align-items: center;">
+<div style="display: flex; justify-content: space-evenly; gap: 6rem; align-items: center;">
   <!-- First image -->
   <img src="https://github.com/user-attachments/assets/0debc9da-c619-4787-a65f-73375234afef" width="400">
   
   <!-- Second image (scaled 2x larger) -->
   <img src="https://github.com/user-attachments/assets/9d339ceb-d2e6-4f3f-ac81-17ba00ebb24a" width="600">
 </div>
+
 
 ---
 

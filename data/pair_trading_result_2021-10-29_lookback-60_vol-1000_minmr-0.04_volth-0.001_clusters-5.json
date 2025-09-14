@@ -1,0 +1,63 @@
+{
+    "cluster_0": {
+        "tickers": [
+            "UNITECH",
+            "VIKASPROP"
+        ],
+        "pairs": []
+    },
+    "cluster_2": {
+        "tickers": [
+            "RCOM",
+            "VISESHINFO",
+            "FCSSOFT",
+            "VIKASECO",
+            "INVENTURE",
+            "JPINFRATEC",
+            "SHRENIK",
+            "VIVIDHA"
+        ],
+        "pairs": [
+            {
+                "tickers": [
+                    "VIKASECO",
+                    "INVENTURE"
+                ],
+                "beta": 0.04510659291395891,
+                "mean_reversion_score": 0.0430493479862216
+            },
+            {
+                "tickers": [
+                    "VIKASECO",
+                    "JPINFRATEC"
+                ],
+                "beta": 0.019982954190218165,
+                "mean_reversion_score": 0.04585459051002527
+            },
+            {
+                "tickers": [
+                    "VIKASECO",
+                    "SHRENIK"
+                ],
+                "beta": 0.017255071191734667,
+                "mean_reversion_score": 0.04573941598412173
+            },
+            {
+                "tickers": [
+                    "VIKASECO",
+                    "VIVIDHA"
+                ],
+                "beta": 0.19188726962227243,
+                "mean_reversion_score": 0.04564427557607529
+            }
+        ]
+    },
+    "cluster_4": {
+        "tickers": [
+            "UJAAS",
+            "BALLARPUR",
+            "AJRINFRA"
+        ],
+        "pairs": []
+    }
+}

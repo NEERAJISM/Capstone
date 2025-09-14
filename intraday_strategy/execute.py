@@ -11,4 +11,5 @@ from pair_selection.generate_pair_trading_results import generate_pair_json
  
 # )
    
-print(generate_pair_json(base_dir =Path("./downloaded_files"), run_date="2021-10-29", lookback=60, tickers_universe=[], volume_threshold=1000, min_mean_reversion=0.04, volatility_threshold=0.001, n_clusters_pairs=5, output_dir="./data"))     
+path = generate_pair_json(base_dir =Path("./downloaded_files"), run_date="2021-10-29", lookback=60, tickers_universe=[], volume_threshold=1000, min_mean_reversion=0.04, volatility_threshold=0.001, n_clusters_pairs=5, output_dir="./data")     
+print(path)

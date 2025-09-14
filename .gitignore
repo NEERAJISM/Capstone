@@ -307,8 +307,7 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,python,pycharm
 
-data/*
+data/*/
 !data/*/.gitkeep
-!data/.gitkeep
 
 

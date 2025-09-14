@@ -269,6 +269,7 @@ class MeanReversionAnalyzer:
             delayed(process_cluster)(cluster_id, tickers)
             for cluster_id, tickers in self.clusters.items()
         )
+        results = list(filter(lambda x: x is not None, results))
 
         output = {cluster_id: data for cluster_id, data in results if data is not None}
         return output

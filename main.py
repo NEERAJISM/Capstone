@@ -12,5 +12,5 @@ loader = StockDataLoader(
 )
 print(loader.get_data_for_tickers())
    
-path = generate_pair_json(base_dir = Path("data"), run_date="2022-01-01", lookback=30, tickers_universe=[], volume_threshold=1000, min_mean_reversion=0.01, volatility_threshold=0.0005, n_clusters_pairs=5, output_dir="./results/pair_selection")     
+path = generate_pair_json(base_dir = Path("data"), run_date="2022-01-31", lookback=30, tickers_universe=[], volume_threshold=1000, min_mean_reversion=0.01, volatility_threshold=0.0005, n_clusters_pairs=5, output_dir="./results/pair_selection")     
 print(path)

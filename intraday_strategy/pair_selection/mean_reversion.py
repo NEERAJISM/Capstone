@@ -9,8 +9,8 @@ from statsmodels.regression.linear_model import OLS
 from statsmodels.tools import add_constant
 from joblib import Parallel, delayed
 
-from capstone.common import StockDataLoader
-from capstone.common import get_logger
+from common import StockDataLoader
+from common import get_logger
 
 
 class MeanReversionAnalyzer:

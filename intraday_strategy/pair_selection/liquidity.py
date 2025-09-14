@@ -3,8 +3,8 @@ from typing import List, Optional, Dict
 
 import numpy as np
 import polars as pl
-from capstone.common import get_logger
-from capstone.common import StockDataLoader
+from common import get_logger
+from common import StockDataLoader
 
 class LiquidityPredictor:
     """

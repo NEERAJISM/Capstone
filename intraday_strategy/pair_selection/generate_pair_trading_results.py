@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List
 from .liquidity import LiquidityPredictor
 from .mean_reversion import MeanReversionAnalyzer
-from capstone.common import get_logger
+from common import get_logger
 
 logger = get_logger()
 

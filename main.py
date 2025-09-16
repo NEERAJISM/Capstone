@@ -42,6 +42,7 @@ def main():
                 start=start_date.strftime("%Y-%m-%d %H:%M:%S"),
                 end=end_date.strftime("%Y-%m-%d %H:%M:%S"),
                 tickers=[stock_a, stock_b],
+                select_columns=["close"],
                 impute=True
             )
             

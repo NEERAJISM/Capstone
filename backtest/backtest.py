@@ -5,7 +5,11 @@ from common.plots import Plots
 from intraday_strategy import MeanReversionIntradayStrategy
 from common import StockDataLoader
 from config import config
-def align_prices(df_a, df_b):
+import pandas as pd
+
+def align_prices(df_a:pd.DataFrame, df_b:pd.DataFrame):
+    df_a = df_a.set_index("datetime")
+    df_b = df_b.set_index("datetime")
     df = df_a.join(df_b, how="inner", lsuffix="_A", rsuffix="_B")
     df.columns = ["Close_A", "Close_B"]
     return df.dropna()

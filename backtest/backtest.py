@@ -28,7 +28,7 @@ def run_pair(stock_a:str, stock_b:str, stack_data_loader:StockDataLoader):
     df_out, trades_df, daily_pnl = MeanReversionIntradayStrategy.apply_strategy(df)
 
     # --- Save per pair outputs ---
-    pair_folder = os.path.join(config.output_dir / "backtest_results", f"{stock_a}_{stock_b}")
+    pair_folder = os.path.join(config.data.output_dir / "backtest_results", f"{stock_a}_{stock_b}")
     os.makedirs(pair_folder, exist_ok=True)
 
     df_out.to_csv(os.path.join(pair_folder, "signals.csv"))

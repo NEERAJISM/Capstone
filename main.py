@@ -28,10 +28,12 @@ def main():
     all_results = []
     for cid, cdata in clusters.items():
         pairs = cdata.get("pairs", [])
+        print(pairs)
         if not pairs:
             continue
         print(f"\n=== Running {cid} ===")
-        for stock_a, stock_b in pairs:
+        for a_pair in pairs:
+            stock_a, stock_b = a_pair["tickers"]
             end_date = datetime.datetime.strptime(config.data.run_date, "%Y-%m-%d")
             start_date = end_date - datetime.timedelta(days=config.data.lookback_days) 
             

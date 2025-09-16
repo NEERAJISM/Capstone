@@ -45,7 +45,7 @@ def main():
                 impute=True
             )
             
-            result = run_pair(stock_a, stock_b, loader, config)
+            result = run_pair(stock_a, stock_b, loader)
             if result:
                 all_results.append(result)
 

@@ -15,7 +15,7 @@ def get_pair_json_path_cached():
     prefix = (
         f"pair_trading_result_{config.data.run_date}"
         f"_lookback-{config.data.lookback_days}"
-        f"_vol-{config.data.tickers_universe}"
+        f"_vol-{config.pair_selection.volume_threshold}"
         f"_minmr-{config.pair_selection.min_mean_reversion}"
         f"_volth-{config.pair_selection.volatility_threshold}"
     )

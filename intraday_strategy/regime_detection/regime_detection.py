@@ -55,7 +55,6 @@ def load_hmm_data(base_path, trading_date, ticker):
 
     # Trading = only the trading_date
     trading_data = data[data["datetime"].dt.date == trading_date.date()]
-    print(trading_data.head(), trading_data.head())
 
     return training_data, trading_data
 

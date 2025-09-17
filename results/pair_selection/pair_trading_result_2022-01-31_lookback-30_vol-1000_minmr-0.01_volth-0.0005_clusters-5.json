@@ -1,44 +1,19 @@
 {
     "cluster_0": {
         "tickers": [
-            "ROLLT",
-            "PROZONINTU"
-        ],
-        "pairs": []
-    },
-    "cluster_1": {
-        "tickers": [
-            "JPPOWER",
-            "ORIENTALTL",
-            "RNAVAL",
-            "KRIDHANINF"
-        ],
-        "pairs": [
-            {
-                "tickers": [
-                    "RNAVAL",
-                    "KRIDHANINF"
-                ],
-                "beta": 0.5733216330223468,
-                "mean_reversion_score": 0.11547989876405357
-            }
-        ]
-    },
-    "cluster_2": {
-        "tickers": [
             "RCOM",
-            "FCONSUMER",
             "UNITECH",
+            "FCONSUMER",
             "VIKASPROP"
         ],
         "pairs": [
             {
                 "tickers": [
-                    "FCONSUMER",
-                    "UNITECH"
+                    "UNITECH",
+                    "FCONSUMER"
                 ],
-                "beta": 0.7925690643117993,
-                "mean_reversion_score": 0.12593701303949587
+                "beta": 0.6148174851573731,
+                "mean_reversion_score": 0.11343936019020483
             },
             {
                 "tickers": [
@@ -50,10 +25,35 @@
             }
         ]
     },
-    "cluster_4": {
+    "cluster_1": {
         "tickers": [
             "IVC",
             "ROLTA"
+        ],
+        "pairs": []
+    },
+    "cluster_2": {
+        "tickers": [
+            "JPPOWER",
+            "ORIENTALTL",
+            "KRIDHANINF",
+            "RNAVAL"
+        ],
+        "pairs": [
+            {
+                "tickers": [
+                    "KRIDHANINF",
+                    "RNAVAL"
+                ],
+                "beta": 1.2049297563646677,
+                "mean_reversion_score": 0.19416581733417407
+            }
+        ]
+    },
+    "cluster_4": {
+        "tickers": [
+            "ROLLT",
+            "PROZONINTU"
         ],
         "pairs": []
     }

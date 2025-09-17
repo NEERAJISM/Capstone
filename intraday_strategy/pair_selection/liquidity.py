@@ -188,32 +188,38 @@ class LiquidityPredictor:
             return 0.0
         active = df.filter(pl.col("volume") > 0).height
         return active / total * 100
-
     def _compute_amihud_liquidity_score(self, df: pl.DataFrame) -> Optional[float]:
         """
         Computes the Amihud illiquidity score.
 
-        The Amihud illiquidity measure is defined as the average ratio of the absolute
-        daily return to the daily trading volume.
+        Amihud illiquidity = average( |return| / volume ).
+        Higher values mean less liquid.
+        We invert & scale to create a liquidity score between 0 and 100.
         """
         if df.is_empty():
             return None
-            
-        df = df.with_columns((pl.col("close").pct_change().abs()).alias("return"))    
+
+        # Compute absolute returns
+        df = df.with_columns(
+            ((pl.col("close") / pl.col("close").shift(1) - 1).abs()).alias("return")
+        )
+
+        # Filter valid volume
         df = df.filter(pl.col("volume") > 0)
 
         if df.is_empty():
             return None
 
+        # Amihud ratio
         df = df.with_columns((pl.col("return") / pl.col("volume")).alias("amihud"))
-        illiq = df["amihud"].mean()
-        
-        if illiq is None:
-            return None
-            
-        # Score inversion and scaling
-        return max(0, 100 - (np.log10(illiq * 1e6) * 20))
 
+        illiq = df["amihud"].mean()
+        if illiq is None or np.isnan(illiq):
+            return None
+
+        # Score inversion and scaling (clip between 0 and 100)
+        score = 100 - (np.log10(illiq + 1e-12) * 20)  # avoid log(0)
+        return float(np.clip(score, 0, 100))
 
     def _compute_volume_consistency_score(self, df: pl.DataFrame) -> Optional[float]:
         """Computes the volume consistency score (based on the coefficient of variation)."""

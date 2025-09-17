@@ -1,6 +1,6 @@
 import datetime
 
-from intraday_strategy import generate_pair_json
+from intraday_strategy import generate_pair_json, save_regime_detected
 import json
 import pandas as pd
 from backtest import run_pair
@@ -21,7 +21,7 @@ def main():
         n_clusters_pairs=config.pair_selection.n_clusters_pairs,
         output_dir=config.data.output_dir / "pair_selection",
     )
-
+    
     with open(pair_json_path, "r") as f:
         clusters = json.load(f)
 
@@ -34,6 +34,10 @@ def main():
         print(f"\n=== Running {cid} ===")
         for a_pair in pairs:
             stock_a, stock_b = a_pair["tickers"]
+
+            save_regime_detected(config, stock_a)
+            save_regime_detected(config, stock_b)
+
             end_date = datetime.datetime.strptime(config.data.run_date, "%Y-%m-%d")
             start_date = end_date - datetime.timedelta(days=config.data.lookback_days) 
             

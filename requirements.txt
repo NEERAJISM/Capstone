@@ -19,3 +19,4 @@ pillow
 scipy
 polars
 joblib
+hmmlearn

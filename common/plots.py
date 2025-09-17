@@ -1,17 +1,19 @@
 import matplotlib.pyplot as plt
 import os
 import pandas as pd
+from common import get_logger
+from config import config
+logger = get_logger(__name__)
 
-OUTPUT_FOLDER = "output"
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-
+plots_dir = (config.data.output_dir / "backtest" / "plots")
+plots_dir.mkdir(parents=True, exist_ok=True)
 
 class Plots:
-
+        
     @staticmethod
     def plot_daily_pnl(daily_pnl, stock_a, stock_b):
         if daily_pnl.empty:
-            print("No trades -> no daily PnL plot.")
+            logger.info("No trades -> no daily PnL plot.")
             return
         fig, ax1 = plt.subplots(figsize=(12, 5))
         ax1.bar(daily_pnl['exit_day'], daily_pnl['daily_net_pnl'], label='Daily Net PnL')
@@ -28,16 +30,16 @@ class Plots:
         ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
         plt.title(f"Daily & Cumulative PnL — Kalman MR Pairs: {stock_a} vs {stock_b}")
         plt.tight_layout()
-        out = os.path.join(OUTPUT_FOLDER, f"{stock_a}_{stock_b}_daily_pnl.png")
+        out = plots_dir / f"{stock_a}_{stock_b}_daily_pnl.png"
         plt.savefig(out)
         plt.close()
-        print(f"Saved daily PnL plot: {out}")
+        logger.info(f"Saved daily PnL plot: {out}")
 
     @staticmethod
     def plot_strategy(df, trades_df, stock_a, stock_b):
         """Visualize stock prices, spread, z-score, and trade signals."""
         if df.empty:
-            print("No data for plotting.")
+            logger.info("No data for plotting.")
             return
 
         fig, axes = plt.subplots(3, 1, figsize=(14, 10), sharex=True)
@@ -79,7 +81,7 @@ class Plots:
                 axes[1].axvline(exit_time, color='blue', linestyle=':', alpha=0.6)
 
         plt.tight_layout()
-        out = os.path.join(OUTPUT_FOLDER, f"{stock_a}_{stock_b}_strategy_plot.png")
+        out =  plots_dir / f"{stock_a}_{stock_b}_strategy_plot.png"
         plt.savefig(out)
         plt.close()
-        print(f"Saved strategy visualization: {out}")
+        logger.info(f"Saved strategy visualization: {out}")

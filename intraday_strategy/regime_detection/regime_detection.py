@@ -8,7 +8,7 @@ from sklearn.preprocessing import StandardScaler
 import numpy as np
 from common import get_logger
 
-logger = get_logger()
+logger = get_logger(__name__)
 
 def load_hmm_data(base_path, trading_date, ticker):
 
@@ -152,10 +152,10 @@ def save_regime_detected(config, ticker):
         ticker=ticker
     )
 
-    logger.info("Training data shape:", training_data.shape)
-    logger.info("Trading data shape:", trading_data.shape)
-    logger.info("Trading day time range:", trading_data["datetime"].min(), "to", trading_data["datetime"].max())
-    logger.info("Training day time range:", training_data["datetime"].min(), "to", training_data["datetime"].max())
+    logger.info("Training data shape: %s", training_data.shape)
+    logger.info("Trading data shape: %s", trading_data.shape)
+    logger.info("Trading day time range: %s to %s", trading_data["datetime"].min(), trading_data["datetime"].max())
+    logger.info("Training day time range: %s to %s", training_data["datetime"].min(), training_data["datetime"].max())
 
     final_df = pd.concat([training_data, trading_data])
     final_df['datetime'] = pd.to_datetime(final_df['datetime'])
@@ -168,6 +168,8 @@ def save_regime_detected(config, ticker):
     test_day = trading_date
 
     result = detect_regimes_train_test_rolling(final_df, train_start, train_end, test_day, lookback=60)
-    result.to_csv( config.data.output_dir / "regime_detected" / f"{ticker}_regimes_{trading_date}.csv")
+    regime_dir =config.data.output_dir / "regime_detection"
+    regime_dir.mkdir(parents=True, exist_ok=True)
+    result.to_csv( regime_dir / f"{ticker}_regimes_{trading_date}.csv")
 
     return result

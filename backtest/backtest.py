@@ -3,9 +3,11 @@ import os
 
 from common.plots import Plots
 from intraday_strategy import MeanReversionIntradayStrategy
-from common import StockDataLoader
+from common import StockDataLoader, get_logger
 from config import config
 import pandas as pd
+
+logger = get_logger(__name__)
 
 def align_prices(df_a:pd.DataFrame, df_b:pd.DataFrame):
     df_a = df_a.set_index("datetime")
@@ -21,14 +23,14 @@ def run_pair(stock_a:str, stock_b:str, stack_data_loader:StockDataLoader):
     df_a, df_b = stack_data_loader.get_data_for_tickers()[stock_a], stack_data_loader.get_data_for_tickers()[stock_b]
     df = align_prices(df_a.to_pandas(), df_b.to_pandas())
     if df.empty:
-        print(f"No overlap for {stock_a}, {stock_b}")
+        logger.info(f"No overlap for {stock_a}, {stock_b}")
         return None
 
-    print(f"Running backtest: {stock_a} vs {stock_b}, {len(df)} rows")
+    logger.info(f"Running backtest: {stock_a} vs {stock_b}, {len(df)} rows")
     df_out, trades_df, daily_pnl = MeanReversionIntradayStrategy.apply_strategy(df)
 
     # --- Save per pair outputs ---
-    pair_folder = os.path.join(config.data.output_dir / "backtest_results", f"{stock_a}_{stock_b}")
+    pair_folder = os.path.join(config.data.output_dir / "backtest", f"{stock_a}_{stock_b}")
     os.makedirs(pair_folder, exist_ok=True)
 
     df_out.to_csv(os.path.join(pair_folder, "signals.csv"))

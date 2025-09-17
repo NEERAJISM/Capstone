@@ -6,7 +6,7 @@ loader = StockDataLoader(
     tickers=[],
     impute=True
 )
-print(loader.get_data_for_tickers())
+logger.info(loader.get_data_for_tickers())
 
 path = generate_pair_json(
     base_dir=Path("data"),
@@ -19,5 +19,5 @@ path = generate_pair_json(
     n_clusters_pairs=5,
     output_dir="./results/pair_selection"
 )
-print(path)
+logger.info(path)
 ```

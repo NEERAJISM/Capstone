@@ -53,7 +53,7 @@ class MeanReversionAnalyzer:
         self.start_time = datetime.strptime(trading_start, "%H:%M:%S").time()
         self.end_time = datetime.strptime(trading_end, "%H:%M:%S").time()
         self.tickers = tickers
-        self.logger = get_logger()
+        self.logger = get_logger(__name__)
 
         self.min_mean_reversion = min_mean_reversion
         self._log_initial_config()

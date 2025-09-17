@@ -20,7 +20,9 @@ class DataConfig:
         self.output_dir = Path(self.output_dir)
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.output_dir / "pair_selection", exist_ok=True)
-        os.makedirs(self.output_dir / "backtest_results", exist_ok=True)
+        os.makedirs(self.output_dir / "backtest", exist_ok=True)
+        os.makedirs(self.output_dir / "regime_detection", exist_ok=True)
+
 
 @dataclass
 class PairSelectionConfig:

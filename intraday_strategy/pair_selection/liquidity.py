@@ -33,7 +33,7 @@ class LiquidityPredictor:
             trading_end: Trading day end time.
             tickers: List of tickers to analyze. If None, all are used.
         """
-        self.logger = get_logger()
+        self.logger = get_logger(__name__)
         self.base_dir = base_dir
 
         # Convert run_date to datetime

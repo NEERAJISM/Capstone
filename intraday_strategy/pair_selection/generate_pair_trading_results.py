@@ -5,7 +5,7 @@ from .liquidity import LiquidityPredictor
 from .mean_reversion import MeanReversionAnalyzer
 from common import get_logger
 
-logger = get_logger()
+logger = get_logger(__name__)
 
 
 def generate_pair_json(

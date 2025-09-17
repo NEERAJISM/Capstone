@@ -12,6 +12,8 @@ class DataConfig:
     output_dir: Path
     run_date: str
     lookback_days: int
+    regime_detection_lookback_days: int
+    regime_detection_lookback_minutes: int 
     tickers_universe: List[str]
     
     def __post_init__(self):
@@ -79,7 +81,9 @@ data_config = DataConfig(
     output_dir="results",
     run_date="2022-01-31",
     lookback_days=30,
-    tickers_universe=[]
+    tickers_universe=[],
+    regime_detection_lookback_days=90,
+    regime_detection_lookback_minutes=60
 )
 
 pair_selection_config = PairSelectionConfig(

@@ -1,6 +1,6 @@
 import datetime
 
-from intraday_strategy import generate_pair_json, save_regime_detected
+from intraday_strategy import get_pair_json_path_cached, save_regime_detected
 import json
 import pandas as pd
 from backtest import run_pair
@@ -13,17 +13,7 @@ logger = get_logger(__name__)
 
 def main():
     # Generate pair selection results
-    pair_json_path = generate_pair_json(
-        base_dir=config.data.data_dir,
-        run_date=config.data.run_date,
-        lookback=config.data.lookback_days,
-        tickers_universe=config.data.tickers_universe,
-        volume_threshold=config.pair_selection.volume_threshold,
-        min_mean_reversion=config.pair_selection.min_mean_reversion,
-        volatility_threshold=config.pair_selection.volatility_threshold,
-        n_clusters_pairs=config.pair_selection.n_clusters_pairs,
-        output_dir=config.data.output_dir / "pair_selection",
-    )
+    pair_json_path = get_pair_json_path_cached()
 
     with open(pair_json_path, "r") as f:
         clusters = json.load(f)

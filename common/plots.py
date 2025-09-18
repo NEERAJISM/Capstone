@@ -4,7 +4,7 @@ from common import get_logger
 from config import config
 logger = get_logger(__name__)
 
-plots_dir = (config.data.output_dir / "backtest")
+plots_dir = (config.data.output_dir / "backtest" / str(config.data.run_date))
 plots_dir.mkdir(parents=True, exist_ok=True)
 
 class Plots:

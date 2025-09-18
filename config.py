@@ -48,7 +48,7 @@ class StrategyConfig:
     """Configuration for trading strategy parameters."""
 
     # Capital and risk
-    capital: float = 100000.0
+    capital: float = 10000000.0
     per_trade_risk: float = 0.02
 
     # Transaction costs
@@ -112,7 +112,7 @@ regime_detection_config = RegimeDetectionConfig(
 )
 
 strategy_config = StrategyConfig(
-    capital=100000.0,
+    capital=10000000.0,
     per_trade_risk=0.02,
     stt_pct=0.00025,
     slippage_pct=0.001,

@@ -52,6 +52,20 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/results/backtest/2022-01-31/pairs_leaderboard.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/results/backtest/FCONSUMER_UNITECH/daily_pnl.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/results/backtest/FCONSUMER_UNITECH/trades.csv">
           <value>
             <Attribute>
@@ -137,6 +151,20 @@
           </value>
         </entry>
         <entry key="/results/regime_detection/RNAVAL_regimes_2022-01-31.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/results/regime_detection/UNITECH_regimes_2022-01-31.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/results/regime_detection/VIKASPROP_regimes_2022-01-31.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

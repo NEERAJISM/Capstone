@@ -9,7 +9,7 @@ from config import config
 logger = get_logger(__name__)
 
 def get_pair_json_path_cached():
-    output_dir = Path(config.data.output_dir) / "pair_selection"
+    output_dir = Path(config.data.output_dir) / "pair_selection" / str(config.data.run_date)
 
     # Build expected prefix (without clusters)
     prefix = (

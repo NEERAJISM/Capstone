@@ -1,2 +1,0 @@
-entry_time,exit_time,side,entryA,entryB,exitA,exitB,sizeA,sizeB,z_entry,z_exit,gross_pnl,costs,net_pnl,exit_day
-2022-01-31 13:41:00,2022-01-31 14:12:00,EXIT_SIGNAL,6.65,3.7,6.65,3.6,141,-541,2.6568,-0.0417,54.1,9.0281,45.0719,2022-01-31

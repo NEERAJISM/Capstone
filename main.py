@@ -56,7 +56,7 @@ def main():
         leaderboard.sort_values("net_pnl", ascending=False, inplace=True)
 
         # Save results to output directory
-        results_dir = config.data.output_dir / "backtest"
+        results_dir = config.data.output_dir / "backtest" / str(config.data.run_date)
         os.makedirs(results_dir, exist_ok=True)
 
         leaderboard_path = results_dir / "pairs_leaderboard.csv"

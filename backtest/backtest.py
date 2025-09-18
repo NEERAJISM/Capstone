@@ -11,7 +11,7 @@ import glob
 logger = get_logger(__name__)
 
 
-def load_regimes(ticker, base_path="results/regime_detection/"):
+def load_regimes(ticker, base_path=f"results/regime_detection/{config.data.run_date}"):
     """Load regime CSVs for a given ticker, using regime_label column."""
     files = glob.glob(os.path.join(base_path, f"{ticker}_regimes_*.csv"))
     if not files:
@@ -64,7 +64,7 @@ def run_pair(stock_a:str, stock_b:str, stack_data_loader:StockDataLoader):
     df_out, trades_df, daily_pnl = MeanReversionIntradayStrategy.apply_strategy(df)
 
     # --- Save per pair outputs ---
-    pair_folder = os.path.join(config.data.output_dir / "backtest", f"{stock_a}_{stock_b}")
+    pair_folder = os.path.join(config.data.output_dir / "backtest" / str(config.data.run_date), f"{stock_a}_{stock_b}")
     os.makedirs(pair_folder, exist_ok=True)
 
     df_out.to_csv(os.path.join(pair_folder, "signals.csv"))

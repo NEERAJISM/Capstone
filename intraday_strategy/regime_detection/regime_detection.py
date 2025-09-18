@@ -186,7 +186,7 @@ def save_regime_detected(ticker):
         test_day,
         lookback=config.regime_detection.lookback_minutes,
     )
-    regime_dir = config.data.output_dir / "regime_detection"
+    regime_dir = config.data.output_dir / "regime_detection" / str(config.data.run_date)
     regime_dir.mkdir(parents=True, exist_ok=True)
     result.to_csv(regime_dir / f"{ticker}_regimes_{trading_date}.csv")
 

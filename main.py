@@ -66,7 +66,7 @@ def main():
             "run_timestamp": datetime.datetime.now().isoformat(),
             "config": {
                 "run_date": config.data.run_date,
-                "lookback_days": config.data.lookback_days,
+                "lookback_days": config.pair_selection.lookback_days,
                 "n_pairs_tested": len(all_results),
                 "n_clusters": len(clusters),
             },

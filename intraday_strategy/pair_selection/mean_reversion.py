@@ -13,37 +13,16 @@ from common import StockDataLoader
 from common import get_logger
 
 
-class PairTradingAnalyzer:
+class MeanReversionAnalyzer:
     """
-    Analyzes a list of stocks to find pairs that exhibit mean-reverting behavior.
+    Analyzes stocks to find mean-reverting pairs for statistical arbitrage.
 
-    This class implements a multi-step process to identify pairs of stocks that are suitable for
-    statistical arbitrage strategies based on mean reversion. The process includes:
-
-    1.  **Basic Filtering**: A preliminary filtering of stocks based on their price volatility.
-        This step removes stocks that do not exhibit sufficient price movement to be interesting
-        for a trading strategy.
-
-    2.  **Feature Computation**: For the remaining stocks, the class computes a set of features
-        that characterize their price behavior. These features include measures of mean
-        reversion, volatility, and autocorrelation.
-
-    3.  **Clustering**: The stocks are then clustered into groups based on their computed
-        features. This is done to group together stocks with similar characteristics, which
-        can improve the efficiency of the pair-finding process.
-
-    4.  **Pair Finding**: Within each cluster, the class searches for pairs of stocks that are
-        cointegrated. Cointegration is a statistical property that suggests a long-run
-        equilibrium relationship between the two stocks. The class uses the Johansen test
-        to test for cointegration.
-
-    5.  **Mean Reversion Analysis**: For each cointegrated pair, the class computes the
-        mean-reversion score of the spread between the two stocks. A high mean-reversion
-        score indicates that the spread tends to revert to its historical mean, which is the
-        key property exploited in a mean-reversion trading strategy.
-
-    The class is designed to be used in conjunction with the `LiquidityAnalyzer` class, which
-    provides a list of liquid stocks to be analyzed.
+    The process involves:
+    1. Filtering stocks by volatility.
+    2. Computing features (mean reversion, volatility, autocorrelation).
+    3. Clustering stocks based on features.
+    4. Finding cointegrated pairs within clusters.
+    5. Analyzing mean-reversion score of the spread.
     """
     def __init__(
         self,
@@ -56,16 +35,16 @@ class PairTradingAnalyzer:
         min_mean_reversion: float = 0.05   
     ):
         """
-        Initializes the PairTradingAnalyzer.
+        Initializes the MeanReversionAnalyzer.
 
         Args:
-            base_dir: The base directory where the stock data is located.
-            run_date: The date for which the analysis is to be run.
-            lookback: The number of days to look back for historical data.
-            trading_start: The start time of the trading day.
-            trading_end: The end time of the trading day.
-            tickers: A list of tickers to analyze. If None, all available tickers will be used.
-            min_mean_reversion: The minimum mean-reversion score for a pair to be considered.
+            base_dir: Base directory for stock data.
+            run_date: Date for the analysis.
+            lookback: Number of days for historical data.
+            trading_start: Trading day start time.
+            trading_end: Trading day end time.
+            tickers: List of tickers to analyze. If None, all are used.
+            min_mean_reversion: Minimum mean-reversion score for a pair.
         """
         self.base_dir = base_dir
         self.run_date = datetime.strptime(run_date, "%Y-%m-%d")
@@ -74,7 +53,7 @@ class PairTradingAnalyzer:
         self.start_time = datetime.strptime(trading_start, "%H:%M:%S").time()
         self.end_time = datetime.strptime(trading_end, "%H:%M:%S").time()
         self.tickers = tickers
-        self.logger = get_logger()
+        self.logger = get_logger(__name__)
 
         self.min_mean_reversion = min_mean_reversion
         self._log_initial_config()
@@ -95,16 +74,13 @@ class PairTradingAnalyzer:
 
     def filter_basic(self, volatility_threshold: float = 0.005) -> List[str]:
         """
-        Filters the tickers based on a minimum volatility threshold.
-
-        This method removes stocks that do not exhibit sufficient price movement to be interesting
-        for a trading strategy.
+        Filters tickers by a minimum volatility threshold.
 
         Args:
-            volatility_threshold: The minimum average daily volatility for a stock to be included.
+            volatility_threshold: Minimum average daily volatility.
 
         Returns:
-            A list of tickers that pass the volatility filter.
+            A list of tickers passing the filter.
         """
         loader = StockDataLoader(
             tickers=self.tickers,
@@ -130,12 +106,10 @@ class PairTradingAnalyzer:
 
     def compute_features(self) -> Dict[str, np.ndarray]:
         """
-        Computes a set of features for each stock that characterize its price behavior.
-
-        The features include measures of mean reversion, volatility, and autocorrelation.
+        Computes features for each stock (mean reversion, volatility, autocorrelation).
 
         Returns:
-            A dictionary where the keys are the tickers and the values are the feature vectors.
+            A dictionary of tickers and their feature vectors.
         """
         features = {}
         for ticker in self.filtered_tickers:
@@ -158,17 +132,13 @@ class PairTradingAnalyzer:
 
     def cluster_stocks(self, n_clusters: int = 5) -> Dict[int, List[str]]:
         """
-        Clusters the stocks into groups based on their computed features.
-
-        This is done to group together stocks with similar characteristics, which can improve the
-        efficiency of the pair-finding process.
+        Clusters stocks based on their features.
 
         Args:
             n_clusters: The number of clusters to create.
 
         Returns:
-            A dictionary where the keys are the cluster IDs and the values are the lists of tickers
-            in each cluster.
+            A dictionary of cluster IDs and the tickers in each cluster.
         """
         if not hasattr(self, 'features') or not self.features:
             self.logger.warning("No features computed. Skipping clustering.")
@@ -193,14 +163,14 @@ class PairTradingAnalyzer:
 
     def _check_pair(self, t1: str, t2: str) -> Optional[List[str]]:
         """
-        Checks if a pair of stocks is cointegrated and has a sufficient mean-reversion score.
+        Checks if a stock pair is cointegrated with a sufficient mean-reversion score.
 
         Args:
-            t1: The first ticker in the pair.
-            t2: The second ticker in the pair.
+            t1: First ticker.
+            t2: Second ticker.
 
         Returns:
-            A dictionary containing the pair's properties if it is a good candidate, otherwise None.
+            A dictionary with pair properties if it's a good candidate, else None.
         """
         df1 = self.data_dict.get(t1)
         df2 = self.data_dict.get(t2)
@@ -247,14 +217,14 @@ class PairTradingAnalyzer:
 
     def find_pairs_in_cluster(self, cluster_tickers: List[str], n_jobs: int = -1) -> List[List[str]]:
         """
-        Finds all cointegrated pairs within a cluster of stocks.
+        Finds all cointegrated pairs within a stock cluster.
 
         Args:
             cluster_tickers: A list of tickers in the cluster.
-            n_jobs: The number of parallel jobs to run. -1 means using all available CPUs.
+            n_jobs: Number of parallel jobs to run (-1 for all CPUs).
 
         Returns:
-            A list of all cointegrated pairs found in the cluster.
+            A list of all cointegrated pairs in the cluster.
         """
 
         # Generate all unique ticker pairs
@@ -273,30 +243,33 @@ class PairTradingAnalyzer:
         return pairs
 
 
-    def analyze(self, volatility_threshold: float = 0.001, n_clusters: int = 5) -> Dict[str, Dict]:
+    def analyze(self, volatility_threshold: float = 0.001, n_clusters: int = 5, n_jobs: int = -1) -> Dict[str, Dict]:
         """
         Runs the full analysis pipeline to find cointegrated pairs.
 
-        The pipeline includes basic filtering, feature computation, clustering, and pair finding.
-
         Args:
-            volatility_threshold: The minimum average daily volatility for a stock to be included.
-            n_clusters: The number of clusters to create.
+            volatility_threshold: Minimum average daily volatility for a stock.
+            n_clusters: Number of clusters to create.
+            n_jobs: The number of parallel jobs to run. -1 means using all available CPUs.
 
         Returns:
-            A dictionary containing the results of the analysis. The keys are the cluster IDs, and
-            the values are dictionaries containing the tickers in the cluster and the cointegrated
-            pairs found in the cluster.
+            A dictionary with cluster IDs, tickers, and cointegrated pairs.
         """
         self.filter_basic(volatility_threshold)
         self.compute_features()
         self.cluster_stocks(n_clusters=n_clusters)
 
-        output = {}
-        for cluster_id, tickers in self.clusters.items():
+        def process_cluster(cluster_id, tickers):
             if len(tickers) < 2:
-                continue
-            pairs = self.find_pairs_in_cluster(tickers, n_jobs=1)  # sequential
-            output[f"cluster_{cluster_id}"] = {"tickers": tickers, "pairs": pairs}
+                return None
+            pairs = self.find_pairs_in_cluster(tickers, n_jobs=1)  # Run inner loop sequentially
+            return f"cluster_{cluster_id}", {"tickers": tickers, "pairs": pairs}
 
+        results = Parallel(n_jobs=n_jobs)(
+            delayed(process_cluster)(cluster_id, tickers)
+            for cluster_id, tickers in self.clusters.items()
+        )
+        results = list(filter(lambda x: x is not None, results))
+
+        output = {cluster_id: data for cluster_id, data in results if data is not None}
         return output

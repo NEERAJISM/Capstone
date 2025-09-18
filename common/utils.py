@@ -1,10 +1,22 @@
 import zipfile
-import rarfile
 from pathlib import Path
 import pandas as pd
 import logging
 import sys
 
+
+def get_logger(name: str = "default", level: int = logging.INFO) -> logging.Logger:
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+
+    if not logger.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setLevel(level)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
+    return logger
 
 class Utils:
 
@@ -21,13 +33,13 @@ class Utils:
         if suffix == '.zip':
             with zipfile.ZipFile(archive_path, 'r') as zip_ref:
                 zip_ref.extractall(dest_dir)
-            print(f"Extracted ZIP: {archive_path.name} to {dest_dir}")
+            logger.info(f"Extracted ZIP: {archive_path.name} to {dest_dir}")
 
         elif suffix == '.rar':
             try:
                 with rarfile.RarFile(archive_path, 'r') as rar_ref:
                     rar_ref.extractall(dest_dir)
-                print(f"Extracted RAR: {archive_path.name} to {dest_dir}")
+                logger.info(f"Extracted RAR: {archive_path.name} to {dest_dir}")
             except rarfile.NeedFirstVolume:
                 raise RuntimeError("This is part of a split archive (e.g., .part1.rar). Please extract manually.")
             except rarfile.RarCannotExec as e:

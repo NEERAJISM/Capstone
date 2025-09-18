@@ -2,11 +2,42 @@ import json
 from pathlib import Path
 from typing import List
 from .liquidity import LiquidityPredictor
-from .mean_reversion import PairTradingAnalyzer
+from .mean_reversion import MeanReversionAnalyzer
 from common import get_logger
+from config import config
 
-logger = get_logger()
+logger = get_logger(__name__)
 
+def get_pair_json_path_cached():
+    output_dir = Path(config.data.output_dir) / "pair_selection"
+
+    # Build expected prefix (without clusters)
+    prefix = (
+        f"pair_trading_result_{config.data.run_date}"
+        f"_lookback-{config.data.lookback_days}"
+        f"_vol-{config.pair_selection.volume_threshold}"
+        f"_minmr-{config.pair_selection.min_mean_reversion}"
+        f"_volth-{config.pair_selection.volatility_threshold}"
+    )
+
+    matches = list(output_dir.glob(f"{prefix}_clusters-*.json"))
+    if matches:
+        logger.info(f"Found existing pair JSON: {matches[0]}")
+        return matches[0]
+
+    # Otherwise, generate it
+    logger.info("No existing pair JSON found. Generating new one...")
+    return generate_pair_json(
+        base_dir=config.data.data_dir,
+        run_date=config.data.run_date,
+        lookback=config.data.lookback_days,
+        tickers_universe=config.data.tickers_universe,
+        volume_threshold=config.pair_selection.volume_threshold,
+        min_mean_reversion=config.pair_selection.min_mean_reversion,
+        volatility_threshold=config.pair_selection.volatility_threshold,
+        n_clusters_pairs=config.pair_selection.n_clusters_pairs,
+        output_dir=config.data.output_dir / "pair_selection",
+    )
 
 def generate_pair_json(
     base_dir: str = "../../downloaded_files",
@@ -50,7 +81,7 @@ def generate_pair_json(
     logger.info("Ranked liquid tickers: %s", liquid_tickers)
 
     # Pair Analysis
-    analyzer = PairTradingAnalyzer(
+    analyzer = MeanReversionAnalyzer(
         base_dir=base_dir,
         run_date=run_date,
         lookback=lookback,

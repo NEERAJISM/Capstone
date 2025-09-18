@@ -1,45 +1,35 @@
 #!/usr/bin/env python3
 import os
-import json
-import pandas as pd
 
 from common.plots import Plots
-from common.utils import Utils
-from intraday_strategy.mean_reversion_intraday_strategy import MeanReversionIntradayStrategy
+from intraday_strategy import MeanReversionIntradayStrategy
+from common import StockDataLoader, get_logger
+from config import config
+import pandas as pd
 
-# ================== CONFIG ================== #
-DATA_FOLDER = "../data/2021/Cash Data April 2021/"
-PAIR_JSON   = "../data/pair_trading_result.json"   # fixed path
-OUTPUT_FOLDER = "output"
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-# =========================================== #
+logger = get_logger(__name__)
 
-
-def align_prices(df_a, df_b):
+def align_prices(df_a:pd.DataFrame, df_b:pd.DataFrame):
+    df_a = df_a.set_index("datetime")
+    df_b = df_b.set_index("datetime")
     df = df_a.join(df_b, how="inner", lsuffix="_A", rsuffix="_B")
     df.columns = ["Close_A", "Close_B"]
     return df.dropna()
 
-def run_pair(stock_a, stock_b):
+def run_pair(stock_a:str, stock_b:str, stack_data_loader:StockDataLoader):
     """Run backtest for one pair and save results."""
-    f_a = os.path.join(DATA_FOLDER, f"{stock_a}.csv")
-    f_b = os.path.join(DATA_FOLDER, f"{stock_b}.csv")
-    if not (os.path.exists(f_a) and os.path.exists(f_b)):
-        print(f"CSV missing for {stock_a}, {stock_b}")
-        return None
 
-    df_a = Utils.load_stock_csv(f_a)
-    df_b = Utils.load_stock_csv(f_b)
-    df = align_prices(df_a, df_b)
+    df_a, df_b = stack_data_loader.get_data_for_tickers()[stock_a], stack_data_loader.get_data_for_tickers()[stock_b]
+    df = align_prices(df_a.to_pandas(), df_b.to_pandas())
     if df.empty:
-        print(f"No overlap for {stock_a}, {stock_b}")
+        logger.info(f"No overlap for {stock_a}, {stock_b}")
         return None
 
-    print(f"Running backtest: {stock_a} vs {stock_b}, {len(df)} rows")
+    logger.info(f"Running backtest: {stock_a} vs {stock_b}, {len(df)} rows")
     df_out, trades_df, daily_pnl = MeanReversionIntradayStrategy.apply_strategy(df)
 
     # --- Save per pair outputs ---
-    pair_folder = os.path.join(OUTPUT_FOLDER, f"{stock_a}_{stock_b}")
+    pair_folder = os.path.join(config.data.output_dir / "backtest", f"{stock_a}_{stock_b}")
     os.makedirs(pair_folder, exist_ok=True)
 
     df_out.to_csv(os.path.join(pair_folder, "signals.csv"))
@@ -74,32 +64,3 @@ def run_pair(stock_a, stock_b):
         }
 
 
-
-def main():
-    with open(PAIR_JSON, "r") as f:
-        clusters = json.load(f)
-
-    all_results = []
-    for cid, cdata in clusters.items():
-        pairs = cdata.get("pairs", [])
-        if not pairs:
-            continue
-        print(f"\n=== Running {cid} ===")
-        for stock_a, stock_b in pairs:
-            result = run_pair(stock_a, stock_b)
-            if result:
-                all_results.append(result)
-
-    # Save leaderboard
-    if all_results:
-        leaderboard = pd.DataFrame(all_results)
-        leaderboard.sort_values("net_pnl", ascending=False, inplace=True)
-        leaderboard.to_csv(os.path.join(OUTPUT_FOLDER, "pairs_leaderboard.csv"), index=False)
-        print("\n=== Leaderboard saved: output/pairs_leaderboard.csv ===")
-        print(leaderboard.head(10))
-    else:
-        print("No valid results.")
-
-
-if __name__ == "__main__":
-    main()

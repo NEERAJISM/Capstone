@@ -33,6 +33,7 @@ class StockDataLoader:
     ):
         """Initializes the data loader with configuration for data retrieval and processing."""
         self.logger = get_logger(__name__)
+        self.logger.disabled = True 
         self.logger.info("Initializing StockDataLoader.")
         
         self._start = self._parse_datetime(start)

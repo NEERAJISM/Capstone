@@ -14,7 +14,7 @@ def get_pair_json_path_cached():
     # Build expected prefix (without clusters)
     prefix = (
         f"pair_trading_result_{config.data.run_date}"
-        f"_lookback-{config.data.lookback_days}"
+        f"_lookback-{config.pair_selection.lookback_days}"
         f"_vol-{config.pair_selection.volume_threshold}"
         f"_minmr-{config.pair_selection.min_mean_reversion}"
         f"_volth-{config.pair_selection.volatility_threshold}"
@@ -30,7 +30,7 @@ def get_pair_json_path_cached():
     return generate_pair_json(
         base_dir=config.data.data_dir,
         run_date=config.data.run_date,
-        lookback=config.data.lookback_days,
+        lookback=config.pair_selection.lookback_days,
         tickers_universe=config.data.tickers_universe,
         volume_threshold=config.pair_selection.volume_threshold,
         min_mean_reversion=config.pair_selection.min_mean_reversion,

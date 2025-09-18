@@ -6,6 +6,7 @@ import polars as pl
 from common import get_logger
 from common import StockDataLoader
 
+
 class LiquidityPredictor:
     """
     Analyzes and filters stocks based on liquidity.
@@ -13,6 +14,7 @@ class LiquidityPredictor:
     Provides basic and advanced filtering methods to rank stocks by liquidity using
     a composite score of volume, trading frequency, Amihud illiquidity, and volume consistency.
     """
+
     def __init__(
         self,
         base_dir: str,
@@ -20,7 +22,7 @@ class LiquidityPredictor:
         lookback: int,
         trading_start: str = "09:15:00",
         trading_end: str = "15:30:00",
-        tickers: Optional[List[str]] = None
+        tickers: Optional[List[str]] = None,
     ):
         """
         Initializes the LiquidityPredictor.
@@ -53,7 +55,6 @@ class LiquidityPredictor:
         # Logging for debugging
         self._log_initial_config()
 
-
     def _log_initial_config(self):
         """Logs the initial configuration of the analyzer."""
         self.logger.info("=" * 50)
@@ -64,7 +65,9 @@ class LiquidityPredictor:
         self.logger.info(f"Start Day          : {self.start_day.date()}")
         self.logger.info(f"End Day            : {self.end_day.date()}")
         self.logger.info(f"Trading Window     : {self.start_time} → {self.end_time}")
-        self.logger.info(f"Tickers            : {self.tickers if self.tickers else 'Using default universe'}")
+        self.logger.info(
+            f"Tickers            : {self.tickers if self.tickers else 'Using default universe'}"
+        )
         self.logger.info("=" * 50)
 
     def filter_basic(self, volume_threshold: int = 1000) -> List[str]:
@@ -77,13 +80,15 @@ class LiquidityPredictor:
         Returns:
             A list of tickers passing the filter.
         """
-        self.logger.info(f"Running basic filter with volume threshold: {volume_threshold}")
+        self.logger.info(
+            f"Running basic filter with volume threshold: {volume_threshold}"
+        )
         loader = StockDataLoader(
             tickers=self.tickers,
             start=f"{self.start_day.strftime('%Y-%m-%d')} {self.start_time}",
             end=f"{self.end_day.strftime('%Y-%m-%d')} {self.end_time}",
             select_columns=["volume"],
-            base_dir=self.base_dir
+            base_dir=self.base_dir,
         )
         data_dict = loader.get_data_for_tickers()
         filtered = []
@@ -91,7 +96,7 @@ class LiquidityPredictor:
         for ticker, df in data_dict.items():
             if not df.is_empty() and df["volume"].mean() >= volume_threshold:
                 filtered.append(ticker)
-        
+
         self.logger.info(f"Found {len(filtered)} tickers passing basic filter.")
         return filtered
 
@@ -99,7 +104,7 @@ class LiquidityPredictor:
         self,
         tickers: List[str],
         custom_weights: Optional[Dict[str, float]] = None,
-        min_score: float = 30.0
+        min_score: float = 30.0,
     ) -> List[str]:
         """
         Filters and ranks tickers by a composite liquidity score.
@@ -118,7 +123,7 @@ class LiquidityPredictor:
                 "average_volume": 0.4,
                 "trading_frequency": 0.3,
                 "amihud_liquidity": 0.2,
-                "volume_consistency": 0.1
+                "volume_consistency": 0.1,
             }
 
         loader = StockDataLoader(
@@ -126,7 +131,7 @@ class LiquidityPredictor:
             start=f"{self.start_day.strftime('%Y-%m-%d')} {self.start_time}",
             end=f"{self.end_day.strftime('%Y-%m-%d')} {self.end_time}",
             select_columns=["volume", "close", "open"],
-            base_dir=self.base_dir
+            base_dir=self.base_dir,
         )
         data_dict = loader.get_data_for_tickers()
 
@@ -138,12 +143,16 @@ class LiquidityPredictor:
 
         # Sort by descending score
         scores.sort(key=lambda x: x[1], reverse=True)
-        
+
         result_tickers = [t[0] for t in scores]
-        self.logger.info(f"Found {len(result_tickers)} tickers passing advanced filter.")
+        self.logger.info(
+            f"Found {len(result_tickers)} tickers passing advanced filter."
+        )
         return result_tickers
 
-    def _compute_weighted_score(self, df: pl.DataFrame, weights: Dict[str, float]) -> Optional[float]:
+    def _compute_weighted_score(
+        self, df: pl.DataFrame, weights: Dict[str, float]
+    ) -> Optional[float]:
         """
         Computes the weighted liquidity score for a stock.
 
@@ -160,19 +169,21 @@ class LiquidityPredictor:
         amihud = self._compute_amihud_liquidity_score(df)
         volume_consistency = self._compute_volume_consistency_score(df)
 
-        if any(v is None for v in [avg_volume, trading_freq, amihud, volume_consistency]):
+        if any(
+            v is None for v in [avg_volume, trading_freq, amihud, volume_consistency]
+        ):
             return None
 
         return (
-            avg_volume * weights["average_volume"] +
-            trading_freq * weights["trading_frequency"] +
-            amihud * weights["amihud_liquidity"] +
-            volume_consistency * weights["volume_consistency"]
+            avg_volume * weights["average_volume"]
+            + trading_freq * weights["trading_frequency"]
+            + amihud * weights["amihud_liquidity"]
+            + volume_consistency * weights["volume_consistency"]
         )
 
     def _compute_average_volume_score(self, df: pl.DataFrame) -> Optional[float]:
         """Computes the average volume score (log-normalized)."""
-        if df.is_empty() :
+        if df.is_empty():
             return None
         mean = df["volume"].mean()
         if mean is None or mean <= 0:
@@ -181,13 +192,14 @@ class LiquidityPredictor:
 
     def _compute_trading_frequency_score(self, df: pl.DataFrame) -> Optional[float]:
         """Computes the trading frequency score (percentage of active trading periods)."""
-        if df.is_empty() :
+        if df.is_empty():
             return None
         total = df.height
         if total == 0:
             return 0.0
         active = df.filter(pl.col("volume") > 0).height
         return active / total * 100
+
     def _compute_amihud_liquidity_score(self, df: pl.DataFrame) -> Optional[float]:
         """
         Computes the Amihud illiquidity score.
@@ -227,9 +239,9 @@ class LiquidityPredictor:
             return None
         mean = df["volume"].mean()
         std = df["volume"].std()
-        
+
         if mean is None or std is None or mean == 0:
             return 0.0
-            
+
         cv = std / mean
         return 100 - cv * 30 if cv <= 1 else 70 * np.exp(-(cv - 1) * 0.5)

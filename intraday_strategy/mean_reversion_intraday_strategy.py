@@ -15,7 +15,9 @@ class MeanReversionIntradayStrategy:
         df["alpha"] = alpha
         df["spread"] = df["Close_B"] - (df["beta"] * df["Close_A"] + df["alpha"])
 
-        df["spread_mean"] = df["spread"].rolling(config.strategy.rolling_window, min_periods=1).mean()
+        df["spread_mean"] = (
+            df["spread"].rolling(config.strategy.rolling_window, min_periods=1).mean()
+        )
         df["spread_std"] = (
             df["spread"]
             .rolling(config.strategy.rolling_window, min_periods=1)
@@ -45,16 +47,20 @@ class MeanReversionIntradayStrategy:
 
             # --- EOD close (force)
             if (
-                    i > 0
-                    and ts.date() != df.index[i - 1].date()
-                    and position != 0
-                    and entry
+                i > 0
+                and ts.date() != df.index[i - 1].date()
+                and position != 0
+                and entry
             ):
                 sizeA, sizeB = entry["sizeA"], entry["sizeB"]
-                gross = sizeB * (pxB - entry["entryB"]) + sizeA * (pxA - entry["entryA"])
+                gross = sizeB * (pxB - entry["entryB"]) + sizeA * (
+                    pxA - entry["entryA"]
+                )
                 turnover = abs(sizeA) * pxA + abs(sizeB) * pxB
                 costs = entry["open_cost"] + turnover * (
-                        config.strategy.stt_pct + config.strategy.slippage_pct + config.strategy.brokerage_pct
+                    config.strategy.stt_pct
+                    + config.strategy.slippage_pct
+                    + config.strategy.brokerage_pct
                 )
                 net = gross - costs
                 trades.append(
@@ -84,23 +90,29 @@ class MeanReversionIntradayStrategy:
 
             # ENTRY
             if (
-                    position == 0
-                    and np.isfinite(z)
-                    and (i - last_exit_index) >= config.strategy.cooldown_bars
+                position == 0
+                and np.isfinite(z)
+                and (i - last_exit_index) >= config.strategy.cooldown_bars
             ):
                 if "regime_A" in df.columns and "regime_B" in df.columns:
-                    if df["regime_A"].iloc[i] != "Sideways" or df["regime_B"].iloc[i] != "Sideways":
+                    if (
+                        df["regime_A"].iloc[i] != "Sideways"
+                        or df["regime_B"].iloc[i] != "Sideways"
+                    ):
                         continue  # only enter if both are Sideways
 
-
-                if df["spread_std"].iloc[i] < config.strategy.vol_filter * np.mean([pxA, pxB]):
+                if df["spread_std"].iloc[i] < config.strategy.vol_filter * np.mean(
+                    [pxA, pxB]
+                ):
                     continue
                 if z > config.strategy.z_entry:  # Short spread
                     sizeB = -round(notional / pxB)
                     sizeA = +round(abs(b) * notional / pxA)
                     turnover = abs(sizeA) * pxA + abs(sizeB) * pxB
                     cost_open = turnover * (
-                            config.strategy.stt_pct + config.strategy.slippage_pct + config.strategy.brokerage_pct
+                        config.strategy.stt_pct
+                        + config.strategy.slippage_pct
+                        + config.strategy.brokerage_pct
                     )
                     entry = dict(
                         i_entry=i,
@@ -114,14 +126,17 @@ class MeanReversionIntradayStrategy:
                     )
                     position = -1
                     print(
-                        f"{ts} [OPEN SHORT] qtyA={entry['sizeA']}, qtyB={entry['sizeB']}, z={entry['z_entry']:.4f}, cost={entry['open_cost']:.4f}")
+                        f"{ts} [OPEN SHORT] qtyA={entry['sizeA']}, qtyB={entry['sizeB']}, z={entry['z_entry']:.4f}, cost={entry['open_cost']:.4f}"
+                    )
 
                 elif z < -config.strategy.z_entry:  # Long spread
                     sizeB = +round(notional / pxB)
                     sizeA = -round(abs(b) * notional / pxA)
                     turnover = abs(sizeA) * pxA + abs(sizeB) * pxB
                     cost_open = turnover * (
-                            config.strategy.stt_pct + config.strategy.slippage_pct + config.strategy.brokerage_pct
+                        config.strategy.stt_pct
+                        + config.strategy.slippage_pct
+                        + config.strategy.brokerage_pct
                     )
                     entry = dict(
                         i_entry=i,
@@ -135,16 +150,21 @@ class MeanReversionIntradayStrategy:
                     )
                     position = 1
                     print(
-                        f"{ts} [OPEN LONG] qtyA={entry['sizeA']}, qtyB={entry['sizeB']}, z={entry['z_entry']:.4f}, cost={entry['open_cost']:.4f}")
+                        f"{ts} [OPEN LONG] qtyA={entry['sizeA']}, qtyB={entry['sizeB']}, z={entry['z_entry']:.4f}, cost={entry['open_cost']:.4f}"
+                    )
 
             # EXIT
             elif position != 0 and np.isfinite(z) and abs(z) < config.strategy.z_exit:
                 if (i - entry["i_entry"]) >= config.strategy.min_hold_bars:
                     sizeA, sizeB = entry["sizeA"], entry["sizeB"]
-                    gross = sizeB * (pxB - entry["entryB"]) + sizeA * (pxA - entry["entryA"])
+                    gross = sizeB * (pxB - entry["entryB"]) + sizeA * (
+                        pxA - entry["entryA"]
+                    )
                     turnover = abs(sizeA) * pxA + abs(sizeB) * pxB
                     costs = entry["open_cost"] + turnover * (
-                            config.strategy.stt_pct + config.strategy.slippage_pct + config.strategy.brokerage_pct
+                        config.strategy.stt_pct
+                        + config.strategy.slippage_pct
+                        + config.strategy.brokerage_pct
                     )
                     net = gross - costs
                     trades.append(
@@ -174,13 +194,21 @@ class MeanReversionIntradayStrategy:
 
         if not trades_df.empty:
             numeric_cols = [
-                "entryA", "entryB", "exitA", "exitB",
-                "z_entry", "z_exit",
-                "gross_pnl", "costs", "net_pnl"
+                "entryA",
+                "entryB",
+                "exitA",
+                "exitB",
+                "z_entry",
+                "z_exit",
+                "gross_pnl",
+                "costs",
+                "net_pnl",
             ]
             for col in numeric_cols:
                 if col in trades_df.columns:
-                    trades_df[col] = pd.to_numeric(trades_df[col], errors="coerce").round(4)
+                    trades_df[col] = pd.to_numeric(
+                        trades_df[col], errors="coerce"
+                    ).round(4)
 
             trades_df["exit_day"] = pd.to_datetime(trades_df["exit_time"]).dt.date
             daily_pnl = trades_df.groupby("exit_day")["net_pnl"].sum().reset_index()
@@ -190,4 +218,3 @@ class MeanReversionIntradayStrategy:
             daily_pnl = pd.DataFrame(columns=["exit_day", "daily_net_pnl", "cum_pnl"])
 
         return df, trades_df, daily_pnl
-

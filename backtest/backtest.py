@@ -26,24 +26,31 @@ def load_regimes(ticker, base_path=f"results/regime_detection/{config.data.run_d
 
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
         df = df[["timestamp", "regime_label"]].copy()
-        df.rename(columns={"timestamp": "datetime", "regime_label": "regime"}, inplace=True)
+        df.rename(
+            columns={"timestamp": "datetime", "regime_label": "regime"}, inplace=True
+        )
         df.set_index("datetime", inplace=True)
         dfs.append(df)
 
     regimes = pd.concat(dfs).sort_index()
     return regimes
 
-def align_prices(df_a:pd.DataFrame, df_b:pd.DataFrame):
+
+def align_prices(df_a: pd.DataFrame, df_b: pd.DataFrame):
     df_a = df_a.set_index("datetime")
     df_b = df_b.set_index("datetime")
     df = df_a.join(df_b, how="inner", lsuffix="_A", rsuffix="_B")
     df.columns = ["Close_A", "Close_B"]
     return df.dropna()
 
-def run_pair(stock_a:str, stock_b:str, stack_data_loader:StockDataLoader):
+
+def run_pair(stock_a: str, stock_b: str, stack_data_loader: StockDataLoader):
     """Run backtest for one pair and save results."""
 
-    df_a, df_b = stack_data_loader.get_data_for_tickers()[stock_a], stack_data_loader.get_data_for_tickers()[stock_b]
+    df_a, df_b = (
+        stack_data_loader.get_data_for_tickers()[stock_a],
+        stack_data_loader.get_data_for_tickers()[stock_b],
+    )
     df = align_prices(df_a.to_pandas(), df_b.to_pandas())
 
     # load regimes
@@ -54,7 +61,7 @@ def run_pair(stock_a:str, stock_b:str, stack_data_loader:StockDataLoader):
     df = df.join(reg_a.rename(columns={"regime": "regime_A"}), how="left")
     df = df.join(reg_b.rename(columns={"regime": "regime_B"}), how="left")
 
-    print(df[['regime_A', 'regime_B']].value_counts())
+    print(df[["regime_A", "regime_B"]].value_counts())
 
     if df.empty:
         logger.info(f"No overlap for {stock_a}, {stock_b}")
@@ -64,7 +71,10 @@ def run_pair(stock_a:str, stock_b:str, stack_data_loader:StockDataLoader):
     df_out, trades_df, daily_pnl = MeanReversionIntradayStrategy.apply_strategy(df)
 
     # --- Save per pair outputs ---
-    pair_folder = os.path.join(config.data.output_dir / "backtest" / str(config.data.run_date), f"{stock_a}_{stock_b}")
+    pair_folder = os.path.join(
+        config.data.output_dir / "backtest" / str(config.data.run_date),
+        f"{stock_a}_{stock_b}",
+    )
     os.makedirs(pair_folder, exist_ok=True)
 
     df_out.to_csv(os.path.join(pair_folder, "signals.csv"))
@@ -88,7 +98,8 @@ def run_pair(stock_a:str, stock_b:str, stack_data_loader:StockDataLoader):
         wins = (trades_df["net_pnl"] > 0).mean()
         daily_sharpe = (
             daily_pnl["daily_net_pnl"].mean() / daily_pnl["daily_net_pnl"].std()
-            if daily_pnl["daily_net_pnl"].std() > 0 else 0
+            if daily_pnl["daily_net_pnl"].std() > 0
+            else 0
         )
         return {
             "pair": f"{stock_a}_{stock_b}",
@@ -97,5 +108,3 @@ def run_pair(stock_a:str, stock_b:str, stack_data_loader:StockDataLoader):
             "win_rate": wins,
             "daily_sharpe": daily_sharpe,
         }
-
-

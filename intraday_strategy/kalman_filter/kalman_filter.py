@@ -5,6 +5,7 @@ import numpy as np
 DELTA = 5e-4
 OBS_COV = 1.0
 
+
 class Kalman:
 
     @staticmethod

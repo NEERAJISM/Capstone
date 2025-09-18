@@ -24,6 +24,7 @@ class MeanReversionAnalyzer:
     4. Finding cointegrated pairs within clusters.
     5. Analyzing mean-reversion score of the spread.
     """
+
     def __init__(
         self,
         base_dir: str,
@@ -32,7 +33,7 @@ class MeanReversionAnalyzer:
         trading_start: str = "09:15:00",
         trading_end: str = "15:30:00",
         tickers: Optional[List[str]] = None,
-        min_mean_reversion: float = 0.05   
+        min_mean_reversion: float = 0.05,
     ):
         """
         Initializes the MeanReversionAnalyzer.
@@ -58,7 +59,6 @@ class MeanReversionAnalyzer:
         self.min_mean_reversion = min_mean_reversion
         self._log_initial_config()
 
-
     def _log_initial_config(self):
         """Logs the initial configuration of the analyzer."""
         self.logger.info("=" * 50)
@@ -69,7 +69,9 @@ class MeanReversionAnalyzer:
         self.logger.info(f"Start Day          : {self.start_day.date()}")
         self.logger.info(f"End Day            : {self.end_day.date()}")
         self.logger.info(f"Trading Window     : {self.start_time} → {self.end_time}")
-        self.logger.info(f"Tickers            : {self.tickers if self.tickers else 'Using default universe'}")
+        self.logger.info(
+            f"Tickers            : {self.tickers if self.tickers else 'Using default universe'}"
+        )
         self.logger.info("=" * 50)
 
     def filter_basic(self, volatility_threshold: float = 0.005) -> List[str]:
@@ -87,7 +89,7 @@ class MeanReversionAnalyzer:
             start=f"{self.start_day.strftime('%Y-%m-%d')} {self.start_time}",
             end=f"{self.end_day.strftime('%Y-%m-%d')} {self.end_time}",
             select_columns=["close"],
-            base_dir=self.base_dir
+            base_dir=self.base_dir,
         )
         data_dict = loader.get_data_for_tickers()
         self.data_dict = data_dict  # cache data to avoid reloading
@@ -120,7 +122,7 @@ class MeanReversionAnalyzer:
             returns = np.diff(prices) / prices[:-1]
 
             # Feature vector: mean-reversion, volatility, autocorrelation
-            rolling_mean = np.convolve(prices, np.ones(5)/5, mode='valid')
+            rolling_mean = np.convolve(prices, np.ones(5) / 5, mode="valid")
             deviations = prices[4:] - rolling_mean
             mean_rev_score = np.mean(np.abs(deviations))
             vol_score = np.mean(np.abs(returns))
@@ -140,17 +142,19 @@ class MeanReversionAnalyzer:
         Returns:
             A dictionary of cluster IDs and the tickers in each cluster.
         """
-        if not hasattr(self, 'features') or not self.features:
+        if not hasattr(self, "features") or not self.features:
             self.logger.warning("No features computed. Skipping clustering.")
             self.clusters = {}
             return {}
-            
+
         tickers = list(self.features.keys())
         X = np.array(list(self.features.values()))
-        
+
         # Handle case with fewer samples than clusters
         if len(tickers) < n_clusters:
-            self.logger.warning(f"Number of tickers ({len(tickers)}) is less than n_clusters ({n_clusters}). Setting n_clusters to {len(tickers)}.")
+            self.logger.warning(
+                f"Number of tickers ({len(tickers)}) is less than n_clusters ({n_clusters}). Setting n_clusters to {len(tickers)}."
+            )
             n_clusters = len(tickers)
 
         kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
@@ -180,7 +184,7 @@ class MeanReversionAnalyzer:
 
         prices1 = df1["close"].to_numpy()
         prices2 = df2["close"].to_numpy()
-        
+
         # Ensure same length
         min_len = min(len(prices1), len(prices2))
         prices1 = prices1[-min_len:]
@@ -209,13 +213,15 @@ class MeanReversionAnalyzer:
         if mean_rev_score < self.min_mean_reversion:
             return None
 
-        return  {
+        return {
             "tickers": [t1, t2],
             "beta": float(beta),
-            "mean_reversion_score": float(mean_rev_score)
+            "mean_reversion_score": float(mean_rev_score),
         }
 
-    def find_pairs_in_cluster(self, cluster_tickers: List[str], n_jobs: int = -1) -> List[List[str]]:
+    def find_pairs_in_cluster(
+        self, cluster_tickers: List[str], n_jobs: int = -1
+    ) -> List[List[str]]:
         """
         Finds all cointegrated pairs within a stock cluster.
 
@@ -229,7 +235,9 @@ class MeanReversionAnalyzer:
 
         # Generate all unique ticker pairs
         ticker_pairs = list(combinations(cluster_tickers, 2))
-        self.logger.info(f"Checking {len(ticker_pairs)} pairs in cluster with {len(cluster_tickers)} tickers.")
+        self.logger.info(
+            f"Checking {len(ticker_pairs)} pairs in cluster with {len(cluster_tickers)} tickers."
+        )
 
         # Use joblib to parallelize the _check_pair function
         results = Parallel(n_jobs=n_jobs)(
@@ -242,8 +250,9 @@ class MeanReversionAnalyzer:
         self.logger.info(f"Found {len(pairs)} cointegrated pairs.")
         return pairs
 
-
-    def analyze(self, volatility_threshold: float = 0.001, n_clusters: int = 5, n_jobs: int = -1) -> Dict[str, Dict]:
+    def analyze(
+        self, volatility_threshold: float = 0.001, n_clusters: int = 5, n_jobs: int = -1
+    ) -> Dict[str, Dict]:
         """
         Runs the full analysis pipeline to find cointegrated pairs.
 
@@ -262,7 +271,9 @@ class MeanReversionAnalyzer:
         def process_cluster(cluster_id, tickers):
             if len(tickers) < 2:
                 return None
-            pairs = self.find_pairs_in_cluster(tickers, n_jobs=1)  # Run inner loop sequentially
+            pairs = self.find_pairs_in_cluster(
+                tickers, n_jobs=1
+            )  # Run inner loop sequentially
             return f"cluster_{cluster_id}", {"tickers": tickers, "pairs": pairs}
 
         results = Parallel(n_jobs=n_jobs)(

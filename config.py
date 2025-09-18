@@ -39,8 +39,9 @@ class PairSelectionConfig:
 @dataclass
 class RegimeDetectionConfig:
     """Configuration for pair selection parameters."""
+
     lookback_minutes: int
-    lookback_months:int
+    lookback_months: int
 
 
 @dataclass
@@ -108,7 +109,6 @@ pair_selection_config = PairSelectionConfig(
 regime_detection_config = RegimeDetectionConfig(
     lookback_months=3,
     lookback_minutes=60,
-
 )
 
 strategy_config = StrategyConfig(
@@ -127,6 +127,9 @@ strategy_config = StrategyConfig(
 
 # Main config that combines all configs
 config = BacktestConfig(
-    data=data_config, pair_selection=pair_selection_config, regime_detection=regime_detection_config,strategy=strategy_config
+    data=data_config,
+    pair_selection=pair_selection_config,
+    regime_detection=regime_detection_config,
+    strategy=strategy_config,
 )
 # =========================================== #

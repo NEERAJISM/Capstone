@@ -34,8 +34,12 @@ def main():
             trade_date = datetime.datetime.strptime(config.data.run_date, "%Y-%m-%d")
 
             # Build intraday start & end datetimes
-            start_dt = pd.to_datetime(f"{trade_date.strftime('%Y-%m-%d')} {config.strategy.start_time}")
-            end_dt = pd.to_datetime(f"{trade_date.strftime('%Y-%m-%d')} {config.strategy.end_time}")
+            start_dt = pd.to_datetime(
+                f"{trade_date.strftime('%Y-%m-%d')} {config.strategy.start_time}"
+            )
+            end_dt = pd.to_datetime(
+                f"{trade_date.strftime('%Y-%m-%d')} {config.strategy.end_time}"
+            )
 
             loader = StockDataLoader(
                 base_dir=config.data.data_dir,

@@ -33,19 +33,19 @@ class StockDataLoader:
     ):
         """Initializes the data loader with configuration for data retrieval and processing."""
         self.logger = get_logger(__name__)
-        self.logger.disabled = True 
+        self.logger.disabled = True
         self.logger.info("Initializing StockDataLoader.")
-        
+
         self._start = self._parse_datetime(start)
         self._end = self._parse_datetime(end)
         self._base_dir = Path(base_dir)
-        
+
         # If no tickers are provided, find all common tickers across the date range.
         self._tickers = tickers or self._find_available_tickers()
-        
+
         self._agg_func = agg_func
         self._resample_freq = resample_freq
-        self._select_columns = select_columns  
+        self._select_columns = select_columns
         self._impute = impute
 
         # In-memory cache for loaded dataframes to speed up repeated access.
@@ -63,7 +63,7 @@ class StockDataLoader:
             "volume": "<volume>",
         }
         self._cols_map = {v: k for k, v in self._rev_cols_map.items()}
-        
+
         self._new_columns, self._columns = zip(*self._rev_cols_map.items())
         if self._select_columns:
             self._new_columns = self._select_columns + ["date", "time"]
@@ -71,8 +71,8 @@ class StockDataLoader:
 
         # Define the schema for the final dataframe.
         self._schema = {
-             "date": pl.String,
-            "time":pl.String,
+            "date": pl.String,
+            "time": pl.String,
             "datetime": pl.Datetime("us"),
             "open_price": pl.Float64,
             "high_price": pl.Float64,
@@ -98,12 +98,16 @@ class StockDataLoader:
                 all_month_tickers.append(tickers_in_month)
 
         if not all_month_tickers:
-            raise FileNotFoundError(f"No CSV files found in any month between {self._start} and {self._end}")
+            raise FileNotFoundError(
+                f"No CSV files found in any month between {self._start} and {self._end}"
+            )
 
         # The intersection of tickers across all months ensures data continuity.
         common_tickers = set.intersection(*all_month_tickers)
         if not common_tickers:
-            raise ValueError("No common tickers found across all months in the given date range.")
+            raise ValueError(
+                "No common tickers found across all months in the given date range."
+            )
 
         self.logger.info(f"Found {len(common_tickers)} common tickers.")
         return sorted(common_tickers)
@@ -136,78 +140,91 @@ class StockDataLoader:
     def _empty_df(self) -> pl.DataFrame:
         """Creates an empty dataframe with the correct schema."""
         return pl.DataFrame(schema=self._schema)
-        
+
     def _load_single_file(self, ticker: str, month: str) -> pl.DataFrame:
         """Loads and preprocesses a single monthly CSV file for a given ticker."""
         folder = self._get_month_dir(month)
         file_path = folder / f"{ticker}.csv"
-    
+
         if not file_path.exists():
             return self._empty_df()
-    
+
         df = pl.read_csv(file_path, columns=self._columns)
         df = df.rename({i: self._cols_map[i] for i in df.columns})
-    
+
         # Create a single datetime column from the date and time columns.
-        df = df.with_columns(
-            pl.concat_str([df["date"], df["time"]], separator=" ")
-            .str.strptime(pl.Datetime, format="%m/%d/%Y %H:%M:%S")
-            .alias("datetime")
-        ).drop(["date", "time"]).sort("datetime")
-    
+        df = (
+            df.with_columns(
+                pl.concat_str([df["date"], df["time"]], separator=" ")
+                .str.strptime(pl.Datetime, format="%m/%d/%Y %H:%M:%S")
+                .alias("datetime")
+            )
+            .drop(["date", "time"])
+            .sort("datetime")
+        )
+
         df = df.set_sorted("datetime")
         return df
-    
+
     def _merge_monthly_data(self, ticker: str) -> pl.DataFrame:
         """Merges data from multiple monthly files for a single ticker."""
         self.logger.info(f"Merging monthly data for {ticker}...")
         months = self._generate_monthly_files()
         dfs = [self._load_single_file(ticker, month) for month in months]
         dfs = [d for d in dfs if not d.is_empty()]
-    
+
         if not dfs:
             return self._empty_df()
-    
+
         df = pl.concat(dfs, how="vertical")
         df = df.sort("datetime")
         df = df.unique(subset=["datetime"], keep="last", maintain_order=True)
-    
+
         # Filter the data to the specified date range.
-        df = df.filter((pl.col("datetime") >= self._start) & (pl.col("datetime") <= self._end))
-    
+        df = df.filter(
+            (pl.col("datetime") >= self._start) & (pl.col("datetime") <= self._end)
+        )
+
         # Impute missing data by forward-filling and then backward-filling.
         if self._impute:
-            time_range = pl.DataFrame({
-                "datetime": pl.datetime_range(
-                    start=self._start,
-                    end=self._end,
-                    interval="1m",
-                    eager=True
-                )
-            })
+            time_range = pl.DataFrame(
+                {
+                    "datetime": pl.datetime_range(
+                        start=self._start, end=self._end, interval="1m", eager=True
+                    )
+                }
+            )
             df = time_range.join(df, on="datetime", how="left")
             df = df.fill_null(strategy="forward").fill_null(strategy="backward")
-    
+
         # Resample the data to the specified frequency.
         if not df.is_empty() and self._resample_freq:
             agg_func = self._agg_func or "mean"
 
             if isinstance(agg_func, str):
-                aggs = [getattr(pl.col(c), agg_func)() for c in df.columns if c != "datetime"]
-            else: # callable
-                aggs = [pl.col(c).apply(agg_func) for c in df.columns if c != "datetime"]
+                aggs = [
+                    getattr(pl.col(c), agg_func)()
+                    for c in df.columns
+                    if c != "datetime"
+                ]
+            else:  # callable
+                aggs = [
+                    pl.col(c).apply(agg_func) for c in df.columns if c != "datetime"
+                ]
 
             df = df.group_by_dynamic(
-                index_column="datetime",
-                every=self._resample_freq,
-                closed="left"
+                index_column="datetime", every=self._resample_freq, closed="left"
             ).agg(aggs)
             df = df.sort("datetime")
-    
-        keep_cols = ["datetime"] + [col for col in self._new_columns if col in df.columns]
+
+        keep_cols = ["datetime"] + [
+            col for col in self._new_columns if col in df.columns
+        ]
         return df.select(keep_cols)
 
-    def get_data_for_tickers(self, tickers: Optional[List[str]] = None) -> Dict[str, pl.DataFrame]:
+    def get_data_for_tickers(
+        self, tickers: Optional[List[str]] = None
+    ) -> Dict[str, pl.DataFrame]:
         """Retrieves processed data for a list of tickers, using parallel processing and caching."""
         if not tickers:
             tickers = self._tickers

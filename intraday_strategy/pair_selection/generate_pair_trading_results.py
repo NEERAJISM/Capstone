@@ -5,13 +5,18 @@ from .liquidity import LiquidityPredictor
 from .mean_reversion import MeanReversionAnalyzer
 from common import get_logger
 from config import config
+from common import Plots
 
 logger = get_logger(__name__)
 
-def get_pair_json_path_cached():
-    output_dir = Path(config.data.output_dir) / "pair_selection" / str(config.data.run_date)
 
-    # Build expected prefix (without clusters)
+
+def get_pair_json_path_cached():
+    output_dir = Path(config.data.output_dir) / "pair_selection" / config.data.run_date
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+
     prefix = (
         f"pair_trading_result_{config.data.run_date}"
         f"_lookback-{config.pair_selection.lookback_days}"
@@ -105,9 +110,11 @@ def generate_pair_json(
         f"_volth-{volatility_threshold}"
         f"_clusters-{n_clusters_pairs}.json"
     )
-    output_path = Path(output_dir) / filename
-    with open(output_path, "w") as f:
+    output_dir = Path(config.data.output_dir) / "pair_selection" / config.data.run_date
+
+    with open(output_dir / filename, "w") as f:
         json.dump(result, f, indent=4)
 
-    logger.info("Saved result to %s", output_path)
-    return str(output_path.resolve())
+    logger.info("Saved result to %s", output_dir / filename)
+    Plots.plot_clusters(output_dir / filename)
+    return str((output_dir / filename).resolve())

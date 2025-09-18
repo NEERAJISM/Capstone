@@ -129,6 +129,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/results/regime_detection/KRIDHANINF_regimes_2022-01-31.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/results/regime_detection/RNAVAL_regimes_2022-01-31.csv">
           <value>
             <Attribute>

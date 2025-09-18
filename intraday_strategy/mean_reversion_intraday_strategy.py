@@ -88,6 +88,11 @@ class MeanReversionIntradayStrategy:
                     and np.isfinite(z)
                     and (i - last_exit_index) >= config.strategy.cooldown_bars
             ):
+                if "regime_A" in df.columns and "regime_B" in df.columns:
+                    if df["regime_A"].iloc[i] != "Sideways" or df["regime_B"].iloc[i] != "Sideways":
+                        continue  # only enter if both are Sideways
+
+
                 if df["spread_std"].iloc[i] < config.strategy.vol_filter * np.mean([pxA, pxB]):
                     continue
                 if z > config.strategy.z_entry:  # Short spread

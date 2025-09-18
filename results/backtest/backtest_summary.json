@@ -1,5 +1,5 @@
 {
-  "run_timestamp": "2025-09-19T01:34:28.995791",
+  "run_timestamp": "2025-09-19T02:53:16.275619",
   "config": {
     "run_date": "2022-01-31",
     "lookback_days": 30,
@@ -7,9 +7,9 @@
     "n_clusters": 4
   },
   "metrics": {
-    "total_trades": 104,
-    "total_pnl": 1244.8471,
-    "avg_win_rate": 0.7321546145075558,
-    "avg_daily_sharpe": 0.41360712747082
+    "total_trades": 1,
+    "total_pnl": 45.0719,
+    "avg_win_rate": 0.3333333333333333,
+    "avg_daily_sharpe": 0.0
   }
 }

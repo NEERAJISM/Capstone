@@ -31,13 +31,16 @@ def main():
             save_regime_detected(stock_a)
             save_regime_detected(stock_b)
 
-            end_date = datetime.datetime.strptime(config.data.run_date, "%Y-%m-%d")
-            start_date = end_date - datetime.timedelta(days=config.pair_selection.lookback_days)
+            trade_date = datetime.datetime.strptime(config.data.run_date, "%Y-%m-%d")
+
+            # Build intraday start & end datetimes
+            start_dt = pd.to_datetime(f"{trade_date.strftime('%Y-%m-%d')} {config.strategy.start_time}")
+            end_dt = pd.to_datetime(f"{trade_date.strftime('%Y-%m-%d')} {config.strategy.end_time}")
 
             loader = StockDataLoader(
                 base_dir=config.data.data_dir,
-                start=start_date.strftime("%Y-%m-%d %H:%M:%S"),
-                end=end_date.strftime("%Y-%m-%d %H:%M:%S"),
+                start=start_dt.strftime("%Y-%m-%d %H:%M:%S"),
+                end=end_dt.strftime("%Y-%m-%d %H:%M:%S"),
                 tickers=[stock_a, stock_b],
                 select_columns=["close"],
                 impute=True,

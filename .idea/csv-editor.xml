@@ -101,6 +101,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/results/backtest/UNITECH_VIKASPROP/daily_pnl.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/results/backtest/UNITECH_VIKASPROP/trades.csv">
           <value>
             <Attribute>

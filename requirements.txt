@@ -21,3 +21,4 @@ polars
 joblib
 hmmlearn
 pyarrow
+seaborn

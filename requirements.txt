@@ -20,3 +20,4 @@ scipy
 polars
 joblib
 hmmlearn
+pyarrow

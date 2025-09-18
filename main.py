@@ -28,11 +28,11 @@ def main():
         for a_pair in pairs:
             stock_a, stock_b = a_pair["tickers"]
 
-            save_regime_detected(config, stock_a)
-            save_regime_detected(config, stock_b)
+            save_regime_detected(stock_a)
+            save_regime_detected(stock_b)
 
             end_date = datetime.datetime.strptime(config.data.run_date, "%Y-%m-%d")
-            start_date = end_date - datetime.timedelta(days=config.data.lookback_days)
+            start_date = end_date - datetime.timedelta(days=config.pair_selection.lookback_days)
 
             loader = StockDataLoader(
                 base_dir=config.data.data_dir,
@@ -66,7 +66,7 @@ def main():
             "run_timestamp": datetime.datetime.now().isoformat(),
             "config": {
                 "run_date": config.data.run_date,
-                "lookback_days": config.data.lookback_days,
+                "lookback_days": config.pair_selection.lookback_days,
                 "n_pairs_tested": len(all_results),
                 "n_clusters": len(clusters),
             },

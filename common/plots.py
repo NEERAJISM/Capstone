@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import os
 import pandas as pd
 from common import get_logger
 from config import config

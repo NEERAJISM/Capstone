@@ -14,13 +14,13 @@ logger = get_logger(__name__)
 
 def load_hmm_data(base_path, trading_date, ticker):
     trading_date = pd.to_datetime(trading_date)
-    three_months_back = trading_date - relativedelta(
+    given_months_back = trading_date - relativedelta(
         months=config.regime_detection.lookback_months
     )
 
     # Collect months in range
     months = pd.date_range(
-        start=three_months_back.replace(day=1), end=trading_date, freq="MS"
+        start=given_months_back.replace(day=1), end=trading_date, freq="MS"
     )
 
     all_data = []

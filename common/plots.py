@@ -5,7 +5,7 @@ from common import get_logger
 from config import config
 logger = get_logger(__name__)
 
-plots_dir = (config.data.output_dir / "backtest" / "plots")
+plots_dir = (config.data.output_dir / "backtest")
 plots_dir.mkdir(parents=True, exist_ok=True)
 
 class Plots:
@@ -30,7 +30,7 @@ class Plots:
         ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
         plt.title(f"Daily & Cumulative PnL — Kalman MR Pairs: {stock_a} vs {stock_b}")
         plt.tight_layout()
-        out = plots_dir / f"{stock_a}_{stock_b}_daily_pnl.png"
+        out = plots_dir / f"{stock_a}_{stock_b}" / "daily_pnl.png"
         plt.savefig(out)
         plt.close()
         logger.info(f"Saved daily PnL plot: {out}")
@@ -81,7 +81,7 @@ class Plots:
                 axes[1].axvline(exit_time, color='blue', linestyle=':', alpha=0.6)
 
         plt.tight_layout()
-        out =  plots_dir / f"{stock_a}_{stock_b}_strategy_plot.png"
+        out =  plots_dir / f"{stock_a}_{stock_b}" / "strategy_plot.png"
         plt.savefig(out)
         plt.close()
         logger.info(f"Saved strategy visualization: {out}")

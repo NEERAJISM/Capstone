@@ -20,7 +20,6 @@ def align_prices(df_a, df_b):
     df.columns = ["Close_A", "Close_B"]
     return df.dropna()
 
-
 def run_pair(stock_a, stock_b):
     """Run backtest for one pair and save results."""
     f_a = os.path.join(DATA_FOLDER, f"{stock_a}.csv")

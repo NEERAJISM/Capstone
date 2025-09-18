@@ -7,7 +7,7 @@ from config import config
 
 class MeanReversionIntradayStrategy:
     @staticmethod
-    def apply_strategy(df, stockA="A", stockB="B", plot=True):
+    def apply_strategy(df):
         """Apply improved Kalman-filter mean reversion intraday strategy with plotting."""
         beta, alpha = Kalman.kalman_hedge(df["Close_A"].values, df["Close_B"].values)
         df = df.copy()
@@ -57,17 +57,17 @@ class MeanReversionIntradayStrategy:
                         "entry_time": entry["entry_time"],
                         "exit_time": ts,
                         "side": "EOD_CLOSE",
-                        "entryA": entry["entryA"],
-                        "entryB": entry["entryB"],
-                        "exitA": pxA,
-                        "exitB": pxB,
+                        "entryA": round(entry["entryA"], 4),
+                        "entryB": round(entry["entryB"], 4),
+                        "exitA": round(pxA, 4),
+                        "exitB": round(pxB, 4),
                         "sizeA": sizeA,
                         "sizeB": sizeB,
-                        "z_entry": entry["z_entry"],
-                        "z_exit": np.nan,
-                        "gross_pnl": gross,
-                        "costs": costs,
-                        "net_pnl": net,
+                        "z_entry": round(entry["z_entry"], 4),
+                        "z_exit": round(z, 4),
+                        "gross_pnl": round(gross, 4),
+                        "costs": round(costs, 4),
+                        "net_pnl": round(net, 4),
                     }
                 )
                 position, entry = 0, None
@@ -134,17 +134,17 @@ class MeanReversionIntradayStrategy:
                             "entry_time": entry["entry_time"],
                             "exit_time": ts,
                             "side": "EXIT_SIGNAL",
-                            "entryA": entry["entryA"],
-                            "entryB": entry["entryB"],
-                            "exitA": pxA,
-                            "exitB": pxB,
+                            "entryA": round(entry["entryA"], 4),
+                            "entryB": round(entry["entryB"], 4),
+                            "exitA": round(pxA, 4),
+                            "exitB": round(pxB, 4),
                             "sizeA": sizeA,
                             "sizeB": sizeB,
-                            "z_entry": entry["z_entry"],
-                            "z_exit": z,
-                            "gross_pnl": gross,
-                            "costs": costs,
-                            "net_pnl": net,
+                            "z_entry": round(entry["z_entry"], 4),
+                            "z_exit": round(z, 4),
+                            "gross_pnl": round(gross, 4),
+                            "costs": round(costs, 4),
+                            "net_pnl": round(net, 4),
                         }
                     )
                     position, entry = 0, None
@@ -158,65 +158,5 @@ class MeanReversionIntradayStrategy:
             daily_pnl["cum_pnl"] = daily_pnl["daily_net_pnl"].cumsum()
         else:
             daily_pnl = pd.DataFrame(columns=["exit_day", "daily_net_pnl", "cum_pnl"])
-
-        # --- Plotting ---
-        if plot and not trades_df.empty:
-            plt.figure(figsize=(14, 10))
-
-            # Prices
-            ax1 = plt.subplot(3, 1, 1)
-            df["Close_A"].plot(ax=ax1, label=stockA)
-            df["Close_B"].plot(ax=ax1, label=stockB)
-            for _, tr in trades_df.iterrows():
-                ax1.axvline(
-                    tr["entry_time"],
-                    color="g" if tr["side"] in ["EXIT_SIGNAL"] else "r",
-                    linestyle="--",
-                )
-            ax1.set_ylabel("Prices")
-            ax1.legend()
-
-            # Spread
-            ax2 = plt.subplot(3, 1, 2, sharex=ax1)
-            df["spread"].plot(ax=ax2, color="orange", label="Spread")
-            df["spread_mean"].plot(ax=ax2, color="black", linestyle="--", label="Mean")
-            ax2.fill_between(
-                df.index,
-                df["spread_mean"] + df["spread_std"],
-                df["spread_mean"] - df["spread_std"],
-                color="gray",
-                alpha=0.2,
-                label="±1σ",
-            )
-            ax2.set_ylabel("Spread")
-            ax2.legend()
-
-            # Z-score
-            ax3 = plt.subplot(3, 1, 3, sharex=ax1)
-            df["z"].plot(ax=ax3, label="Z-score")
-            ax3.axhline(config.strategy.z_entry, color="r", linestyle="--", label="Entry Threshold")
-            ax3.axhline(-config.strategy.z_entry, color="r", linestyle="--")
-            ax3.axhline(config.strategy.z_exit, color="g", linestyle="--", label="Exit Band")
-            ax3.axhline(-config.strategy.z_exit, color="g", linestyle="--")
-            ax3.legend()
-            ax3.set_ylabel("Z-score")
-
-            plt.tight_layout()
-            plt.show()
-
-            # Daily PnL
-            plt.figure(figsize=(12, 4))
-            plt.bar(
-                daily_pnl["exit_day"], daily_pnl["daily_net_pnl"], label="Daily PnL"
-            )
-            plt.plot(
-                daily_pnl["exit_day"],
-                daily_pnl["cum_pnl"],
-                color="orange",
-                label="Cumulative PnL",
-            )
-            plt.legend()
-            plt.title("Strategy PnL")
-            plt.show()
 
         return df, trades_df, daily_pnl

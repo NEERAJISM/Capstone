@@ -1,0 +1,33 @@
+{
+    "cluster_0": {
+        "tickers": [
+            "LSIL",
+            "BALLARPUR",
+            "GAMMNINFRA"
+        ],
+        "pairs": [
+            {
+                "tickers": [
+                    "LSIL",
+                    "BALLARPUR"
+                ],
+                "beta": 0.14666080264616654,
+                "mean_reversion_score": 0.011778690736462842
+            }
+        ]
+    },
+    "cluster_1": {
+        "tickers": [
+            "KGL",
+            "RAJRAYON"
+        ],
+        "pairs": []
+    },
+    "cluster_2": {
+        "tickers": [
+            "GTLINFRA",
+            "RCOM"
+        ],
+        "pairs": []
+    }
+}

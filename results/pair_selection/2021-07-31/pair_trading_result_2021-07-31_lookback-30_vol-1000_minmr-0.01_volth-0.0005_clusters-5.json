@@ -1,0 +1,203 @@
+{
+    "cluster_0": {
+        "tickers": [
+            "PUNJLLOYD",
+            "BCP",
+            "OPTOCIRCUI",
+            "GAYAHWS",
+            "BRFL",
+            "CCCL"
+        ],
+        "pairs": [
+            {
+                "tickers": [
+                    "BCP",
+                    "OPTOCIRCUI"
+                ],
+                "beta": -0.09756563939685059,
+                "mean_reversion_score": 0.04555993977719502
+            },
+            {
+                "tickers": [
+                    "BCP",
+                    "GAYAHWS"
+                ],
+                "beta": 0.10274299379189988,
+                "mean_reversion_score": 0.04857210879808102
+            },
+            {
+                "tickers": [
+                    "BCP",
+                    "BRFL"
+                ],
+                "beta": -0.0489082448872101,
+                "mean_reversion_score": 0.04538103695537539
+            },
+            {
+                "tickers": [
+                    "BCP",
+                    "CCCL"
+                ],
+                "beta": 0.2622635467526693,
+                "mean_reversion_score": 0.04865920167619907
+            }
+        ]
+    },
+    "cluster_1": {
+        "tickers": [
+            "JMTAUTOLTD",
+            "RHFL",
+            "SPTL",
+            "VIVIDHA",
+            "SINTEX",
+            "BALLARPUR",
+            "UJAAS"
+        ],
+        "pairs": []
+    },
+    "cluster_2": {
+        "tickers": [
+            "SANWARIA",
+            "MEGA-RE",
+            "GAL",
+            "BHANDARI",
+            "NILASPACES",
+            "SHRENIK",
+            "SHRIRAMEPC"
+        ],
+        "pairs": [
+            {
+                "tickers": [
+                    "SANWARIA",
+                    "BHANDARI"
+                ],
+                "beta": 0.13508543559127528,
+                "mean_reversion_score": 0.030046678186020862
+            },
+            {
+                "tickers": [
+                    "SANWARIA",
+                    "SHRENIK"
+                ],
+                "beta": 0.21412099327636913,
+                "mean_reversion_score": 0.026301869473708273
+            },
+            {
+                "tickers": [
+                    "MEGA-RE",
+                    "GAL"
+                ],
+                "beta": -0.37499654031854734,
+                "mean_reversion_score": 0.14702940023935696
+            },
+            {
+                "tickers": [
+                    "MEGA-RE",
+                    "BHANDARI"
+                ],
+                "beta": 0.4286696827569386,
+                "mean_reversion_score": 0.11724335155097076
+            },
+            {
+                "tickers": [
+                    "MEGA-RE",
+                    "NILASPACES"
+                ],
+                "beta": 0.0011413792418897284,
+                "mean_reversion_score": 0.14193658667028078
+            },
+            {
+                "tickers": [
+                    "MEGA-RE",
+                    "SHRENIK"
+                ],
+                "beta": 0.5702354138645879,
+                "mean_reversion_score": 0.11456881986478593
+            },
+            {
+                "tickers": [
+                    "MEGA-RE",
+                    "SHRIRAMEPC"
+                ],
+                "beta": 0.15023286938821134,
+                "mean_reversion_score": 0.13694813365642672
+            },
+            {
+                "tickers": [
+                    "BHANDARI",
+                    "SHRENIK"
+                ],
+                "beta": 1.2293762248709137,
+                "mean_reversion_score": 0.07554159365943162
+            }
+        ]
+    },
+    "cluster_3": {
+        "tickers": [
+            "GOENKA",
+            "RAJRAYON"
+        ],
+        "pairs": [
+            {
+                "tickers": [
+                    "GOENKA",
+                    "RAJRAYON"
+                ],
+                "beta": 0.5632995989024456,
+                "mean_reversion_score": 0.01258827663426269
+            }
+        ]
+    },
+    "cluster_4": {
+        "tickers": [
+            "VISESHINFO",
+            "VIKASPROP",
+            "GREENPOWER",
+            "INVENTURE",
+            "FCONSUMER",
+            "LSIL"
+        ],
+        "pairs": [
+            {
+                "tickers": [
+                    "VISESHINFO",
+                    "GREENPOWER"
+                ],
+                "beta": 0.0562268794625808,
+                "mean_reversion_score": 0.014610093082427552
+            },
+            {
+                "tickers": [
+                    "VIKASPROP",
+                    "GREENPOWER"
+                ],
+                "beta": -0.21349246490578636,
+                "mean_reversion_score": 0.048278539591727516
+            },
+            {
+                "tickers": [
+                    "VIKASPROP",
+                    "INVENTURE"
+                ],
+                "beta": 0.3830883946326176,
+                "mean_reversion_score": 0.05136114485185774
+            },
+            {
+                "tickers": [
+                    "VIKASPROP",
+                    "FCONSUMER"
+                ],
+                "beta": 0.13168654651893583,
+                "mean_reversion_score": 0.04094727693623219
+            },
+            {
+                "tickers": [
+                    "INVENTURE",
+                    "FCONSUMER"
+                ],
+                "beta": 0.18703956417667236,
+                "mean_reversion_score": 0.08701730897242112
+            }
+        ]
+    }
+}

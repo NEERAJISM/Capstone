@@ -1,0 +1,80 @@
+{
+    "cluster_0": {
+        "tickers": [
+            "UNITECH",
+            "VIKASECO"
+        ],
+        "pairs": [
+            {
+                "tickers": [
+                    "UNITECH",
+                    "VIKASECO"
+                ],
+                "beta": -0.1638107872367408,
+                "mean_reversion_score": 0.028989961036809998
+            }
+        ]
+    },
+    "cluster_3": {
+        "tickers": [
+            "VISESHINFO",
+            "FCSSOFT",
+            "JPINFRATEC",
+            "GREENPOWER",
+            "VIVIDHA",
+            "SHRENIK",
+            "LSIL"
+        ],
+        "pairs": [
+            {
+                "tickers": [
+                    "JPINFRATEC",
+                    "GREENPOWER"
+                ],
+                "beta": 0.36264844124849693,
+                "mean_reversion_score": 0.02377371916953318
+            },
+            {
+                "tickers": [
+                    "JPINFRATEC",
+                    "SHRENIK"
+                ],
+                "beta": -0.7500016444109325,
+                "mean_reversion_score": 0.03412864250933623
+            },
+            {
+                "tickers": [
+                    "JPINFRATEC",
+                    "LSIL"
+                ],
+                "beta": 0.34128166498932266,
+                "mean_reversion_score": 0.03179955565082399
+            },
+            {
+                "tickers": [
+                    "VIVIDHA",
+                    "SHRENIK"
+                ],
+                "beta": -0.09963392978927899,
+                "mean_reversion_score": 0.023564678032116825
+            },
+            {
+                "tickers": [
+                    "VIVIDHA",
+                    "LSIL"
+                ],
+                "beta": -0.016551582128516346,
+                "mean_reversion_score": 0.02396078944039982
+            }
+        ]
+    },
+    "cluster_4": {
+        "tickers": [
+            "BALLARPUR",
+            "AJRINFRA",
+            "UJAAS",
+            "VIKASPROP"
+        ],
+        "pairs": []
+    }
+}

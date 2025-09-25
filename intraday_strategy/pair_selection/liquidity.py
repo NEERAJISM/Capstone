@@ -94,7 +94,7 @@ class LiquidityPredictor:
         filtered = []
 
         for ticker, df in data_dict.items():
-            if not df.is_empty() and df["volume"].mean() >= volume_threshold:
+            if not df.is_empty() and df["volume"].fill_null(0).mean() >= volume_threshold:
                 filtered.append(ticker)
 
         self.logger.info(f"Found {len(filtered)} tickers passing basic filter.")

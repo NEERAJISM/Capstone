@@ -5,48 +5,30 @@ from datetime import datetime, timedelta
 from hmmlearn.hmm import GaussianHMM
 from sklearn.preprocessing import StandardScaler
 import numpy as np
-from common import get_logger
+from common import get_logger, StockDataLoader
 from config import config
 from dateutil.relativedelta import relativedelta
 
 logger = get_logger(__name__)
 
-
 def load_hmm_data(base_path, trading_date, ticker):
-    trading_date = pd.to_datetime(trading_date)
+    trading_date = pd.to_datetime(trading_date).to_pydatetime()
     given_months_back = trading_date - relativedelta(
         months=config.regime_detection.lookback_months
     )
-
-    # Collect months in range
-    months = pd.date_range(
-        start=given_months_back.replace(day=1), end=trading_date, freq="MS"
+    loader = StockDataLoader(
+        base_dir=config.data.data_dir,
+        start=given_months_back,
+        end=trading_date,
+        tickers=[ticker],
+        select_columns=["close"],
+        impute=True,
     )
+    data = loader.get_data_for_tickers()[ticker].to_pandas()
 
-    all_data = []
-    for month in months:
-        year = month.year
-        month_name = month.strftime("%B")
-        folder_name = f"Cash Data {month_name} {year}"
-        nested_path = os.path.join(base_path, str(year), folder_name, f"{ticker}.csv")
-        nested_path = nested_path.replace("\\", "/")
-        logger.info(nested_path)
-
-        if os.path.exists(nested_path):
-            df = pd.read_csv(nested_path)
-
-            # Clean column names (remove < >)
-            df.columns = [c.strip("<>").lower() for c in df.columns]
-
-            # Combine date + time into DateTime
-            df["datetime"] = pd.to_datetime(df["date"] + " " + df["time"])
-
-            all_data.append(df)
-
-    if not all_data:
-        raise FileNotFoundError(f"No data found for {ticker} in last 3 months")
-
-    data = pd.concat(all_data).sort_values("datetime")
+    # FIX: reset index so 'datetime' is a column
+    data = data.reset_index()
+    data["ticker"] = ticker
 
     # Training = last 3 months up to *day before trading_date*
     training_data = data[data["datetime"] < trading_date]
@@ -142,6 +124,10 @@ def detect_regimes_train_test_rolling(
                 "regime_label": "Trending" if regime == trending_regime else "Sideways",
             }
         )
+    if not results:
+        logger.error("No regimes detected during the test period.")
+        exit(0)    
+    print("Results collected:", (results))
 
     result_df = pd.DataFrame(results).set_index("timestamp")
     return result_df
@@ -149,6 +135,7 @@ def detect_regimes_train_test_rolling(
 
 # Save Every minute regime detected  for the ticker
 def save_regime_detected(ticker):
+    
     trading_date = config.data.run_date
     base_path = config.data.data_dir
 

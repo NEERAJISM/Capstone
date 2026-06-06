@@ -64,7 +64,7 @@ class LiquidityPredictor:
         self.logger.info(f"Run Date           : {self.run_date.date()}")
         self.logger.info(f"Start Day          : {self.start_day.date()}")
         self.logger.info(f"End Day            : {self.end_day.date()}")
-        self.logger.info(f"Trading Window     : {self.start_time} → {self.end_time}")
+        self.logger.info(f"Trading Window     : {self.start_time} -> {self.end_time}")
         self.logger.info(
             f"Tickers            : {self.tickers if self.tickers else 'Using default universe'}"
         )

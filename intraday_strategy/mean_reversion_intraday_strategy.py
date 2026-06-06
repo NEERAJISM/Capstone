@@ -38,6 +38,16 @@ class MeanReversionIntradayStrategy:
         notional = config.strategy.capital * config.strategy.per_trade_risk
         last_exit_index = -config.strategy.cooldown_bars
 
+        # Entry-funnel diagnostics: count why bars fail to produce an entry.
+        funnel = {
+            "in_window": 0,
+            "flat_and_ready": 0,   # position 0, finite z, past cooldown
+            "rej_regime": 0,       # blocked by both-Sideways gate
+            "rej_vol_filter": 0,   # blocked by spread_std vol filter
+            "z_below_entry": 0,    # gates passed but |z| < z_entry
+            "entries": 0,
+        }
+
         for i in range(len(df)):
             ts = df.index[i]
             pxA, pxB = float(df["Close_A"].iloc[i]), float(df["Close_B"].iloc[i])
@@ -87,6 +97,7 @@ class MeanReversionIntradayStrategy:
             # skip outside trading window
             if t < config.strategy.start_time or t > config.strategy.end_time:
                 continue
+            funnel["in_window"] += 1
 
             # ENTRY
             if (
@@ -94,17 +105,26 @@ class MeanReversionIntradayStrategy:
                 and np.isfinite(z)
                 and (i - last_exit_index) >= config.strategy.cooldown_bars
             ):
-                if "regime_A" in df.columns and "regime_B" in df.columns:
+                funnel["flat_and_ready"] += 1
+                if (
+                    config.strategy.use_regime_filter
+                    and "regime_A" in df.columns
+                    and "regime_B" in df.columns
+                ):
                     if (
                         df["regime_A"].iloc[i] != "Sideways"
                         or df["regime_B"].iloc[i] != "Sideways"
                     ):
+                        funnel["rej_regime"] += 1
                         continue  # only enter if both are Sideways
 
                 if df["spread_std"].iloc[i] < config.strategy.vol_filter * np.mean(
                     [pxA, pxB]
                 ):
+                    funnel["rej_vol_filter"] += 1
                     continue
+                if abs(z) <= config.strategy.z_entry:
+                    funnel["z_below_entry"] += 1
                 if z > config.strategy.z_entry:  # Short spread
                     sizeB = -round(notional / pxB)
                     sizeA = +round(abs(b) * notional / pxA)
@@ -125,6 +145,7 @@ class MeanReversionIntradayStrategy:
                         open_cost=_r(cost_open),
                     )
                     position = -1
+                    funnel["entries"] += 1
                     print(
                         f"{ts} [OPEN SHORT] qtyA={entry['sizeA']}, qtyB={entry['sizeB']}, z={entry['z_entry']:.4f}, cost={entry['open_cost']:.4f}"
                     )
@@ -149,6 +170,7 @@ class MeanReversionIntradayStrategy:
                         open_cost=_r(cost_open),
                     )
                     position = 1
+                    funnel["entries"] += 1
                     print(
                         f"{ts} [OPEN LONG] qtyA={entry['sizeA']}, qtyB={entry['sizeB']}, z={entry['z_entry']:.4f}, cost={entry['open_cost']:.4f}"
                     )
@@ -188,6 +210,13 @@ class MeanReversionIntradayStrategy:
                     print(f"{ts} [EXIT SIGNAL] Net={_r(net):.4f}, z={_r(z):.4f}")
                     position, entry = 0, None
                     last_exit_index = i
+
+        # Entry-funnel diagnostic: shows exactly which gate kills entries.
+        print(
+            "[FUNNEL] in_window={in_window} flat_ready={flat_and_ready} "
+            "rej_regime={rej_regime} rej_vol_filter={rej_vol_filter} "
+            "z_below_entry={z_below_entry} entries={entries}".format(**funnel)
+        )
 
         # create dataframe and coerce/round numeric cols robustly
         trades_df = pd.DataFrame(trades)

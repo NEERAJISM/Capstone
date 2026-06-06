@@ -1,4 +1,9 @@
+import argparse
 import datetime
+import subprocess
+import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
 from intraday_strategy import get_pair_json_path_cached, save_regime_detected
 import json
@@ -92,5 +97,71 @@ def main():
         logger.warning("No valid results generated from any pairs.")
 
 
+def _run_one(run_date: str, log_dir: Path) -> tuple[str, int, str]:
+    """Launch a single-date pipeline in its own process, redirecting its output
+    to a per-date log file. Subprocess isolation gives each run a clean config
+    (run_date) and avoids joblib state bleeding between dates."""
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / f"run_{run_date}.log"
+    with open(log_path, "w", encoding="utf-8") as fh:
+        proc = subprocess.run(
+            [sys.executable, os.path.abspath(__file__), "--run-date", run_date],
+            stdout=fh,
+            stderr=subprocess.STDOUT,
+        )
+    return run_date, proc.returncode, str(log_path)
+
+
+def _parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(
+        description="Pair-trading backtest pipeline (pair selection -> regime -> backtest)."
+    )
+    p.add_argument(
+        "--run-date",
+        help="Single run date YYYY-MM-DD; overrides config. Default: config value.",
+    )
+    p.add_argument(
+        "--run-dates",
+        nargs="+",
+        metavar="YYYY-MM-DD",
+        help="Multiple run dates executed as parallel subprocesses.",
+    )
+    p.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="Parallel run-date workers for --run-dates (default: 1 = sequential).",
+    )
+    p.add_argument(
+        "--log-dir",
+        default="results/logs",
+        help="Directory for per-run logs when using --run-dates (default: results/logs).",
+    )
+    return p.parse_args()
+
+
 if __name__ == "__main__":
-    main()
+    args = _parse_args()
+
+    if args.run_dates:
+        # Fan-out: one subprocess per date, up to --workers concurrent.
+        log_dir = Path(args.log_dir)
+        logger.info(
+            "Launching %d run(s) across %d worker(s); logs -> %s",
+            len(args.run_dates),
+            args.workers,
+            log_dir,
+        )
+        with ThreadPoolExecutor(max_workers=args.workers) as pool:
+            futures = {
+                pool.submit(_run_one, d, log_dir): d for d in args.run_dates
+            }
+            for fut in as_completed(futures):
+                date, code, path = fut.result()
+                status = "OK" if code == 0 else f"FAILED (exit {code})"
+                logger.info("[%s] %s -> %s", date, status, path)
+    else:
+        # Default single run (current behaviour). --run-date overrides config.
+        if args.run_date:
+            config.data.run_date = args.run_date
+        main()

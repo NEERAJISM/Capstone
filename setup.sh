@@ -4,7 +4,7 @@
 # Ensure we are in capstone folder
 # -------------------------------
 currentFolder=${PWD##*/}
-if [ "$currentFolder" != "capstone" ]; then
+if [ "$(echo "$currentFolder" | tr '[:upper:]' '[:lower:]')" != "capstone" ]; then
     echo "You must be in the 'capstone' folder to run this script."
     exit 1
 fi

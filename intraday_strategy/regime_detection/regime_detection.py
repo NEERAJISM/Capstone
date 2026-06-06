@@ -1,273 +1,247 @@
-from functools import lru_cache
-import os
-import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+
+import numpy as np
+import polars as pl
 from hmmlearn.hmm import GaussianHMM
 from sklearn.preprocessing import StandardScaler
-import numpy as np
-from common import get_logger, StockDataLoader
+
+from common import StockDataLoader, get_logger, filter_market_hours
 from config import config
-from dateutil.relativedelta import relativedelta
 
 logger = get_logger(__name__)
 
-def load_hmm_data(base_path, trading_date, ticker):
-    trading_date = pd.to_datetime(trading_date).to_pydatetime()
-    given_months_back = trading_date - relativedelta(
+
+def _compute_rolling_features(
+    close: np.ndarray, window: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Compute log_return, volatility, slope arrays (NaN-padded for first window-1 rows)."""
+    n = len(close)
+    log_ret = np.full(n, np.nan)
+    log_ret[1:] = np.log(close[1:] / close[:-1])
+
+    volatility = np.full(n, np.nan)
+    slope = np.full(n, np.nan)
+    for i in range(window - 1, n):
+        lr_slice = log_ret[i - window + 1 : i + 1]
+        valid = lr_slice[~np.isnan(lr_slice)]
+        if len(valid) > 1:
+            volatility[i] = np.std(valid, ddof=1) * np.sqrt(window)
+        c_slice = close[i - window + 1 : i + 1]
+        slope[i] = np.polyfit(range(len(c_slice)), c_slice, 1)[0]
+
+    return log_ret, volatility, slope
+
+
+def load_hmm_data(
+    base_path, trading_date, ticker
+) -> tuple[pl.DataFrame, pl.DataFrame]:
+    """Return (training_df, trading_df) as Polars DataFrames with 'datetime', 'close', 'ticker'."""
+    if isinstance(trading_date, str):
+        trading_date = datetime.strptime(trading_date, "%Y-%m-%d")
+
+    lookback_start = trading_date - relativedelta(
         months=config.regime_detection.lookback_months
     )
+    # Load through end of trading day so intraday bars are included
+    trading_day_end = trading_date.replace(hour=15, minute=30, second=0)
+
     loader = StockDataLoader(
         base_dir=config.data.data_dir,
-        start=given_months_back,
-        end=trading_date,
+        start=lookback_start.strftime("%Y-%m-%d %H:%M:%S"),
+        end=trading_day_end.strftime("%Y-%m-%d %H:%M:%S"),
         tickers=[ticker],
         select_columns=["close"],
         impute=True,
     )
-    data = loader.get_data_for_tickers()[ticker].to_pandas()
+    data = loader.get_data_for_tickers()[ticker]
+    data = data.with_columns(pl.lit(ticker).alias("ticker"))
 
-    # FIX: reset index so 'datetime' is a column
-    data = data.reset_index()
-    data["ticker"] = ticker
+    # Drop imputed overnight/weekend flat bars before any modeling.
+    data = filter_market_hours(data)
 
-    # Training = last 3 months up to *day before trading_date*
-    training_data = data[data["datetime"] < trading_date]
-
-    # Trading = only the trading_date
-    trading_data = data[data["datetime"].dt.date == trading_date.date()]
+    trading_date_date = trading_date.date()
+    training_data = data.filter(pl.col("datetime").dt.date() < trading_date_date)
+    trading_data = data.filter(pl.col("datetime").dt.date() == trading_date_date)
 
     return training_data, trading_data
 
 
 def detect_regimes_train_test_rolling(
-    data, train_start, train_end, test_day, lookback=60
-):
-    # 1. Training set
-    train_data = data[(data.index >= train_start) & (data.index <= train_end)].copy()
-    if train_data.empty:
-        raise ValueError("Training data is empty. Check train_start/train_end dates.")
+    data: pl.DataFrame,
+    train_start: datetime,
+    train_end: datetime,
+    test_day: datetime,
+    lookback: int = 60,
+    rolling_window: int = 15,
+) -> pl.DataFrame:
+    # Slice training window
+    train_df = data.filter(
+        (pl.col("datetime") >= train_start) & (pl.col("datetime") <= train_end)
+    ).sort("datetime")
 
-    # Training features
-    train_data["log_return"] = np.log(
-        train_data["close"] / train_data["close"].shift(1)
-    )
-    window = 15
-    train_data["volatility"] = train_data["log_return"].rolling(window).std() * np.sqrt(
-        window
-    )
-    train_data["slope"] = (
-        train_data["close"]
-        .rolling(window)
-        .apply(lambda x: np.polyfit(range(len(x)), x, 1)[0])
-    )
-    train_data.dropna(inplace=True)
+    if train_df.is_empty():
+        raise ValueError(f"Training data empty for range {train_start} -> {train_end}")
 
-    features_train = train_data[["log_return", "volatility", "slope"]].values
+    train_close = train_df["close"].to_numpy().astype(float)
+    log_ret, volatility, slope = _compute_rolling_features(train_close, rolling_window)
+
+    valid_mask = ~(np.isnan(log_ret) | np.isnan(volatility) | np.isnan(slope))
+    features_train = np.stack([log_ret, volatility, slope], axis=1)[valid_mask]
+
+    if features_train.shape[0] == 0:
+        raise ValueError(
+            "Training features all-NaN after rolling. Increase lookback or check data."
+        )
+
     scaler = StandardScaler()
-    features_train_scaled = scaler.fit_transform(features_train)
+    features_scaled = scaler.fit_transform(features_train)
 
-    # Train HMM
-    hmm_model = GaussianHMM(
-        n_components=2, covariance_type="full", n_iter=200, random_state=42
-    )
-    hmm_model.fit(features_train_scaled)
-
-    # Identify regimes (trending vs sideways)
-    train_data["regime"] = hmm_model.predict(features_train_scaled)
-    regime_stats = train_data.groupby("regime")[["volatility", "slope"]].mean()
-    trending_regime = regime_stats["slope"].abs().idxmax()
-    sideways_regime = 1 - trending_regime
-
-    # 2. Test set
-    test_data = data[data.index >= test_day].copy()
-    if test_data.empty:
-        raise ValueError("No data found for test_day. Check your date filter.")
-
-    results = []
-
-    # Rolling prediction for each minute
-    for i in range(lookback, len(test_data)):
-        window_slice = test_data.iloc[
-            i - lookback : i + 1
-        ].copy()  # last 60 minutes + current
-        window_slice["log_return"] = np.log(
-            window_slice["close"] / window_slice["close"].shift(1)
-        )
-        window_slice["volatility"] = window_slice["log_return"].rolling(
-            window
-        ).std() * np.sqrt(window)
-        window_slice["slope"] = (
-            window_slice["close"]
-            .rolling(window)
-            .apply(lambda x: np.polyfit(range(len(x)), x, 1)[0])
-        )
-        window_slice.dropna(inplace=True)
-
-        if len(window_slice) == 0:
-            continue
-
-        features_window = window_slice[["log_return", "volatility", "slope"]].values
-        features_window_scaled = scaler.transform(features_window)
-
-        # Predict regime for the latest point in this window
-        probs = hmm_model.predict_proba(features_window_scaled)[-1]
-        regime = hmm_model.predict(features_window_scaled)[-1]
-
-        results.append(
-            {
-                "ticker": test_data["ticker"].iloc[i],
-                "timestamp": test_data.index[i],
-                "close": test_data["close"].iloc[i],
-                "regime": regime,
-                "prob_sideways": probs[sideways_regime],
-                "prob_trending": probs[trending_regime],
-                "regime_label": "Trending" if regime == trending_regime else "Sideways",
-            }
-        )
-def detect_regimes_train_test_rolling(
-    data, train_start, train_end, test_day, lookback=60, rolling_window=15
-):
-    # Ensure timestamps are Timestamps
-    train_start = pd.to_datetime(train_start)
-    train_end = pd.to_datetime(train_end)
-    test_day = pd.to_datetime(test_day)
-
-    # Slice train_data using .loc (inclusive)
-    train_data = data.loc[train_start:train_end].copy()
-    if train_data.empty:
-        raise ValueError(f"Training data empty for range {train_start} → {train_end}")
-
-    # Build training features
-    train_data["log_return"] = np.log(train_data["close"] / train_data["close"].shift(1))
-    train_data["volatility"] = train_data["log_return"].rolling(rolling_window).std() * np.sqrt(rolling_window)
-    train_data["slope"] = train_data["close"].rolling(rolling_window).apply(lambda x: np.polyfit(range(len(x)), x, 1)[0])
-    train_data = train_data.dropna()
-    if train_data.empty:
-        raise ValueError("Training data becomes empty after computing features + dropna(). Increase lookback / check raw data.")
-
-    features_train = train_data[["log_return", "volatility", "slope"]].values
-    scaler = StandardScaler()
-    features_train_scaled = scaler.fit_transform(features_train)
-
-    # Fit HMM (catch exceptions)
     try:
-        hmm_model = GaussianHMM(n_components=2, covariance_type="full", n_iter=200, random_state=42)
-        hmm_model.fit(features_train_scaled)
+        # Diagonal covariance is far more stable than "full" on intraday
+        # features (fewer params, no near-singular full covariance), which
+        # removes the "Model is not converging" collapse seen with "full".
+        hmm = GaussianHMM(
+            n_components=2,
+            covariance_type="diag",
+            n_iter=500,
+            tol=1e-4,
+            random_state=42,
+        )
+        hmm.fit(features_scaled)
     except Exception as e:
         logger.exception("HMM training failed: %s", e)
         raise
 
-    # identify regimes
-    train_data["regime"] = hmm_model.predict(features_train_scaled)
-    regime_stats = train_data.groupby("regime")[["volatility", "slope"]].mean()
-    trending_regime = regime_stats["slope"].abs().idxmax()
+    if not hmm.monitor_.converged:
+        logger.warning("HMM did not fully converge; using best-effort fit.")
+
+    # Label states by a combined trending signature in scaled feature space:
+    # trending = higher directional movement (|slope|) AND higher volatility.
+    # Using both (not slope alone) makes the label assignment stable when one
+    # feature barely separates the two states.
+    train_states = hmm.predict(features_scaled)
+
+    def _trending_score(state: int) -> float:
+        rows = features_scaled[train_states == state]
+        if len(rows) == 0:
+            return -np.inf
+        # cols: 0=log_return, 1=volatility, 2=slope
+        return float(np.abs(rows[:, 2]).mean() + rows[:, 1].mean())
+
+    trending_regime = 0 if _trending_score(0) >= _trending_score(1) else 1
     sideways_regime = 1 - trending_regime
 
-    # Prepare test_data: explicitly get the single day's rows
-    day_start = test_day.normalize()
-    day_end = day_start + pd.Timedelta(days=1) - pd.Timedelta(minutes=1)
-    test_data = data.loc[day_start:day_end].copy()
+    # Test data: single trading day
+    test_day_date = test_day.date() if isinstance(test_day, datetime) else test_day
+    test_df = data.filter(
+        pl.col("datetime").dt.date() == test_day_date
+    ).sort("datetime")
 
-    if test_data.empty:
-        logger.warning("No test data found for %s. Data available range: %s → %s", test_day.date(), data.index.min(), data.index.max())
-        return pd.DataFrame()  # return empty DataFrame rather than exit
-
-    # If test_data is shorter than lookback -> cannot compute rolling predictions
-    if len(test_data) <= lookback:
+    if test_df.is_empty():
         logger.warning(
-            "Test day has %d rows which is <= lookback (%d). Need more intraday rows to compute rolling predictions.",
-            len(test_data),
-            lookback,
+            "No test data for %s. Available: %s -> %s",
+            test_day_date,
+            data["datetime"].min(),
+            data["datetime"].max(),
         )
-        return pd.DataFrame()
+        return pl.DataFrame()
+
+    if len(test_df) <= lookback:
+        logger.warning(
+            "Test day has %d rows <= lookback (%d).", len(test_df), lookback
+        )
+        return pl.DataFrame()
+
+    test_close = test_df["close"].to_numpy().astype(float)
+    test_timestamps = test_df["datetime"].to_list()
+    test_ticker = test_df["ticker"][0] if "ticker" in test_df.columns else None
+
+    # Compute the test-day features once and decode the whole session as a
+    # single coherent state path (Viterbi). This replaces the previous
+    # per-minute isolated-window decode, which refit the scaler on each 60-bar
+    # slice and took only its last point -> unstable, all-Trending labels, slow.
+    # NOTE: full-day Viterbi uses the transition structure across the day, i.e.
+    # mild within-session smoothing; acceptable for a regime *filter*. For a
+    # strictly causal estimate, swap to forward filtering later.
+    t_log, t_vol, t_slope = _compute_rolling_features(test_close, rolling_window)
+    test_valid = ~(np.isnan(t_log) | np.isnan(t_vol) | np.isnan(t_slope))
+    if not np.any(test_valid):
+        logger.warning("Test-day features all-NaN after rolling. Nothing to decode.")
+        return pl.DataFrame()
+
+    feat = np.stack([t_log, t_vol, t_slope], axis=1)[test_valid]
+    feat_scaled = scaler.transform(feat)
+
+    regime_path = hmm.predict(feat_scaled)
+    probs = hmm.predict_proba(feat_scaled)
+    valid_idx = np.where(test_valid)[0]
 
     results = []
-    # For each minute index >= lookback produce features on the last `rolling_window` minutes (or up to lookback)
-    for i in range(lookback, len(test_data)):
-        window_slice = test_data.iloc[max(0, i - lookback): i + 1].copy()
-        # compute features for this window_slice; use the same rolling_window (or smaller if not enough)
-        w = min(rolling_window, max(2, len(window_slice) - 1))
-
-        window_slice["log_return"] = np.log(window_slice["close"] / window_slice["close"].shift(1))
-        window_slice["volatility"] = window_slice["log_return"].rolling(w).std() * np.sqrt(w)
-        window_slice["slope"] = window_slice["close"].rolling(w).apply(lambda x: np.polyfit(range(len(x)), x, 1)[0])
-
-        window_slice = window_slice.dropna()
-        if window_slice.empty:
-            continue
-
-        features_window = window_slice[["log_return", "volatility", "slope"]].values
-        # scaler expects same number of features and at least one row
-        if features_window.shape[0] == 0:
-            continue
-
-        features_window_scaled = scaler.transform(features_window)
-
-        probs = hmm_model.predict_proba(features_window_scaled)[-1]
-        regime = hmm_model.predict(features_window_scaled)[-1]
-
-        ts = test_data.index[i]
+    for k, i in enumerate(valid_idx):
+        regime = int(regime_path[k])
         results.append(
             {
-                "ticker": test_data["ticker"].iloc[i] if "ticker" in test_data.columns else None,
-                "timestamp": ts,
-                "close": test_data["close"].iloc[i],
-                "regime": int(regime),
-                "prob_sideways": float(probs[sideways_regime]),
-                "prob_trending": float(probs[trending_regime]),
+                "ticker": test_ticker,
+                "timestamp": test_timestamps[i],
+                "close": float(test_close[i]),
+                "regime": regime,
+                "prob_sideways": float(probs[k, sideways_regime]),
+                "prob_trending": float(probs[k, trending_regime]),
                 "regime_label": "Trending" if regime == trending_regime else "Sideways",
             }
         )
 
     if not results:
-        logger.warning("No regimes were appended during rolling loop. Check lookback/window and available intraday rows.")
-        return pd.DataFrame()
+        logger.warning("No regime results produced. Check rolling_window and intraday rows.")
+        return pl.DataFrame()
 
-    result_df = pd.DataFrame(results).set_index("timestamp")
-    return result_df
+    return pl.DataFrame(results)
 
 
-# Save Every minute regime detected  for the ticker
-def save_regime_detected(ticker):
-    trading_date = pd.to_datetime(config.data.run_date)
-    base_path = config.data.data_dir
+def save_regime_detected(ticker: str) -> pl.DataFrame:
+    trading_date = datetime.strptime(config.data.run_date, "%Y-%m-%d")
 
     training_data, trading_data = load_hmm_data(
-        base_path=base_path, trading_date=trading_date, ticker=ticker
+        base_path=config.data.data_dir,
+        trading_date=trading_date,
+        ticker=ticker,
     )
 
-    logger.info("Training data shape: %s", getattr(training_data, "shape", None))
-    logger.info("Trading data shape: %s", getattr(trading_data, "shape", None))
+    logger.info("Training rows: %d", len(training_data))
+    logger.info("Trading rows:  %d", len(trading_data))
 
-    if training_data.empty:
+    if training_data.is_empty():
         logger.error("No training data for %s. Aborting.", ticker)
-        return pd.DataFrame()
+        return pl.DataFrame()
 
-    if trading_data.empty:
-        logger.error("No trading data for %s on %s. Aborting.", ticker, trading_date.date())
-        return pd.DataFrame()
+    if trading_data.is_empty():
+        logger.error(
+            "No trading data for %s on %s. Aborting.", ticker, trading_date.date()
+        )
+        return pl.DataFrame()
 
-    final_df = pd.concat([training_data, trading_data], ignore_index=True)
-    final_df["datetime"] = pd.to_datetime(final_df["datetime"])
-    final_df = final_df.sort_values(["datetime"]).set_index("datetime")
-
+    all_data = pl.concat([training_data, trading_data]).sort("datetime")
     train_start = training_data["datetime"].min()
     train_end = training_data["datetime"].max()
-    test_day = trading_date
 
     result = detect_regimes_train_test_rolling(
-        final_df,
+        all_data,
         train_start,
         train_end,
-        test_day,
+        trading_date,
         lookback=config.regime_detection.lookback_minutes,
     )
 
-    if result.empty:
+    if result.is_empty():
         logger.warning("No regime results for %s. Nothing to save.", ticker)
         return result
 
-    regime_dir = config.data.output_dir / "regime_detection" / str(config.data.run_date)
+    regime_dir = (
+        config.data.output_dir / "regime_detection" / str(config.data.run_date)
+    )
     regime_dir.mkdir(parents=True, exist_ok=True)
-    result.to_csv(regime_dir / f"{ticker}_regimes_{trading_date.date()}.csv")
+    out_path = regime_dir / f"{ticker}_regimes_{trading_date.date()}.csv"
+    result.write_csv(str(out_path))
+    logger.info("Saved regimes to %s", out_path)
     return result

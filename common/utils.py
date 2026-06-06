@@ -1,8 +1,24 @@
 import zipfile
 from pathlib import Path
+from datetime import time
 import pandas as pd
+import polars as pl
 import logging
 import sys
+
+# Indian equity cash session.
+MARKET_OPEN = time(9, 15)
+MARKET_CLOSE = time(15, 30)
+
+
+def filter_market_hours(df: pl.DataFrame) -> pl.DataFrame:
+    """Keep only weekday bars inside the trading session (drops imputed
+    overnight/weekend forward-fills produced by StockDataLoader)."""
+    return df.filter(
+        (pl.col("datetime").dt.weekday() <= 5)
+        & (pl.col("datetime").dt.time() >= MARKET_OPEN)
+        & (pl.col("datetime").dt.time() <= MARKET_CLOSE)
+    )
 
 
 def get_logger(name: str = "default", level: int = logging.INFO) -> logging.Logger:

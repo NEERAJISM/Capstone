@@ -132,6 +132,8 @@ class Plots:
         ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
         plt.title(f"Daily & Cumulative PnL — Kalman MR Pairs: {stock_a} vs {stock_b}")
         plt.tight_layout()
+        # Resolve output dir at call time (run_date changes across a sweep).
+        plots_dir = config.data.output_dir / "backtest" / str(config.data.run_date)
         out = plots_dir / f"{stock_a}_{stock_b}" / "daily_pnl.png"
         plt.savefig(out)
         plt.close()
@@ -205,6 +207,8 @@ class Plots:
                 axes[1].axvline(exit_time, color="blue", linestyle=":", alpha=0.6)
 
         plt.tight_layout()
+        # Resolve output dir at call time (run_date changes across a sweep).
+        plots_dir = config.data.output_dir / "backtest" / str(config.data.run_date)
         out = plots_dir / f"{stock_a}_{stock_b}" / "strategy_plot.png"
         plt.savefig(out)
         plt.close()

@@ -309,3 +309,5 @@ pyrightconfig.json
 
 data/*/*
 !data/*/.gitkeep
+# Generated backtest artifacts (reproduce via _sweep.py; numbers live in RESULTS.md)
+results/

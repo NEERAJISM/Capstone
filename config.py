@@ -64,6 +64,7 @@ class StrategyConfig:
     min_hold_bars: int = 5
     cooldown_bars: int = 15
     vol_filter: float = 0.0005
+    use_regime_filter: bool = True  # gate entries on both legs being Sideways
 
     # Trading hours
     start_time: time = field(default_factory=lambda: pd.to_datetime("10:15:00").time())

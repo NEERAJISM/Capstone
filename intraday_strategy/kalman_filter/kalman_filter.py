@@ -20,7 +20,7 @@ class Kalman:
             transition_covariance=trans_cov,
             observation_covariance=obs_cov,
             initial_state_mean=np.zeros(2),
-            initial_state_covariance=np.ones((2, 2)),
+            initial_state_covariance=np.eye(2),
         )
         kf.observation_matrices = obs_mats
         state_means, _ = kf.filter(y)

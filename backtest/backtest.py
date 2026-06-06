@@ -11,8 +11,12 @@ import glob
 logger = get_logger(__name__)
 
 
-def load_regimes(ticker, base_path=f"results/regime_detection/{config.data.run_date}"):
+def load_regimes(ticker, base_path=None):
     """Load regime CSVs for a given ticker, using regime_label column."""
+    # Compute at call time, not import time — config.data.run_date changes across
+    # a multi-date sweep, so a default-arg path would freeze to the first date.
+    if base_path is None:
+        base_path = f"results/regime_detection/{config.data.run_date}"
     files = glob.glob(os.path.join(base_path, f"{ticker}_regimes_*.csv"))
     if not files:
         print(f"[WARN] No regime files found for {ticker}")

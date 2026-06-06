@@ -4,6 +4,7 @@ from typing import List, Optional, Dict
 
 import numpy as np
 from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 from statsmodels.tsa.stattools import coint, adfuller
 from statsmodels.regression.linear_model import OLS
 from statsmodels.tools import add_constant
@@ -11,6 +12,7 @@ from joblib import Parallel, delayed
 
 from common import StockDataLoader
 from common import get_logger
+from common import filter_market_hours
 
 
 class MeanReversionAnalyzer:
@@ -49,7 +51,10 @@ class MeanReversionAnalyzer:
         """
         self.base_dir = base_dir
         self.run_date = datetime.strptime(run_date, "%Y-%m-%d")
-        self.end_day = self.run_date
+        # End selection window the day BEFORE the traded session. Using run_date
+        # itself leaks the traded day into cointegration/ADF/beta/half-life
+        # (look-ahead) — pairs would be chosen partly from the data they trade.
+        self.end_day = self.run_date - timedelta(days=1)
         self.start_day = self.run_date - timedelta(days=lookback)
         self.start_time = datetime.strptime(trading_start, "%H:%M:%S").time()
         self.end_time = datetime.strptime(trading_end, "%H:%M:%S").time()
@@ -68,7 +73,7 @@ class MeanReversionAnalyzer:
         self.logger.info(f"Run Date           : {self.run_date.date()}")
         self.logger.info(f"Start Day          : {self.start_day.date()}")
         self.logger.info(f"End Day            : {self.end_day.date()}")
-        self.logger.info(f"Trading Window     : {self.start_time} → {self.end_time}")
+        self.logger.info(f"Trading Window     : {self.start_time} -> {self.end_time}")
         self.logger.info(
             f"Tickers            : {self.tickers if self.tickers else 'Using default universe'}"
         )
@@ -92,6 +97,11 @@ class MeanReversionAnalyzer:
             base_dir=self.base_dir,
         )
         data_dict = loader.get_data_for_tickers()
+        # Drop imputed overnight/weekend flat bars so cointegration, beta, and
+        # half-life are computed on real intraday session data only.
+        data_dict = {
+            t: filter_market_hours(df) for t, df in data_dict.items()
+        }
         self.data_dict = data_dict  # cache data to avoid reloading
         filtered = []
 
@@ -150,6 +160,9 @@ class MeanReversionAnalyzer:
         tickers = list(self.features.keys())
         X = np.array(list(self.features.values()))
 
+        # Replace any NaN features (e.g. degenerate autocorr) before scaling.
+        X = np.nan_to_num(X, nan=0.0)
+
         # Handle case with fewer samples than clusters
         if len(tickers) < n_clusters:
             self.logger.warning(
@@ -157,17 +170,58 @@ class MeanReversionAnalyzer:
             )
             n_clusters = len(tickers)
 
+        # Standardize features so KMeans distance is not dominated by the
+        # largest-magnitude feature (mean_rev vs vol vs autocorr differ in scale).
+        X_scaled = StandardScaler().fit_transform(X)
+
         kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
-        labels = kmeans.fit_predict(X)
+        labels = kmeans.fit_predict(X_scaled)
         clusters = {i: [] for i in range(n_clusters)}
         for ticker, label in zip(tickers, labels):
             clusters[label].append(ticker)
         self.clusters = clusters
         return clusters
 
+    @staticmethod
+    def _half_life(spread: np.ndarray, dates: np.ndarray) -> float:
+        """
+        Estimate intraday mean-reversion half-life (in 1-min bars) via AR(1)/OU.
+
+        Model:  Δspread_t = a + b · spread_{t-1},  half_life = -ln(2) / b  (b < 0).
+
+        This is an *intraday* strategy: positions are opened and closed within a
+        session and never held overnight. So the AR(1) is fit only on
+        within-session transitions — the overnight gap deltas (last bar of one
+        day → first bar of the next) are dropped, since that jump is never traded
+        and would otherwise pollute the reversion-speed estimate.
+
+        Returns np.inf when the spread is non-reverting (b >= 0) or degenerate.
+        """
+        spread = np.asarray(spread, dtype=float)
+        lagged = spread[:-1]
+        delta = np.diff(spread)
+
+        # Keep only transitions where both bars fall on the same trading day.
+        same_day = dates[1:] == dates[:-1]
+        lagged = lagged[same_day]
+        delta = delta[same_day]
+
+        if len(lagged) < 2 or np.std(lagged) == 0:
+            return np.inf
+
+        X = add_constant(lagged)
+        b = OLS(delta, X).fit().params[1]
+        if b >= 0:
+            return np.inf
+        return float(-np.log(2) / b)
+
     def _check_pair(self, t1: str, t2: str) -> Optional[List[str]]:
         """
-        Checks if a stock pair is cointegrated with a sufficient mean-reversion score.
+        Checks if a stock pair is cointegrated and mean-reverts fast enough.
+
+        Reversion is gated by the spread's half-life (AR(1)/OU fit), which measures
+        reversion *speed* — unlike the prior mean-absolute-deviation score, which
+        only measured spread amplitude and let trending spreads pass.
 
         Args:
             t1: First ticker.
@@ -184,11 +238,15 @@ class MeanReversionAnalyzer:
 
         prices1 = df1["close"].to_numpy()
         prices2 = df2["close"].to_numpy()
+        # Both tickers share the same imputed + market-hours datetime grid,
+        # so a common tail-slice keeps prices and timestamps aligned.
+        dates1 = df1["datetime"].dt.date().to_numpy()
 
         # Ensure same length
         min_len = min(len(prices1), len(prices2))
         prices1 = prices1[-min_len:]
         prices2 = prices2[-min_len:]
+        dates = dates1[-min_len:]
 
         # Beta hedge ratio
         X = add_constant(prices2)
@@ -208,7 +266,15 @@ class MeanReversionAnalyzer:
         if adf_result[1] >= 0.05:
             return None
 
-        # Minimum mean-reversion filter
+        # Reversion-speed filter: intraday half-life of the spread (in 1-min
+        # bars), fit on within-session transitions only. Reject non-reverting
+        # (inf) or spreads that don't revert within a single session (375 bars),
+        # since positions are force-closed EOD.
+        half_life = self._half_life(spread, dates)
+        if not np.isfinite(half_life) or half_life <= 1 or half_life > 375:
+            return None
+
+        # Amplitude check: spread must oscillate enough to be worth trading.
         mean_rev_score = np.mean(np.abs(spread - np.mean(spread)))
         if mean_rev_score < self.min_mean_reversion:
             return None
@@ -217,6 +283,7 @@ class MeanReversionAnalyzer:
             "tickers": [t1, t2],
             "beta": float(beta),
             "mean_reversion_score": float(mean_rev_score),
+            "half_life": float(half_life),
         }
 
     def find_pairs_in_cluster(
